@@ -1,0 +1,11 @@
+{
+  "title": "Ectocontrol Modbus Adapter v2",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Ectocontrol Modbus Adapter v2",
+        "description": "Configure serial port and Modbus slave ID for the adapter."
+      }
+    }
+  }
+}

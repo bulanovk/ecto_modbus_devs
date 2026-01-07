@@ -1,0 +1,19 @@
+{
+  "domain": "ectocontrol_modbus",
+  "name": "Ectocontrol Modbus Adapter v2",
+  "version": "0.1.0",
+  "documentation": "https://example.com/ectocontrol-modbus",
+  "requirements": [
+    "modbus-tk>=1.1.5",
+    "pyserial>=3.5"
+  ],
+  "dependencies": [],
+  "codeowners": ["@your-github-username"],
+  "issue_tracker": "https://example.com/ectocontrol-modbus/issues",
+  "repository": "https://github.com/your-github-username/ectocontrol-modbus",
+  "license": "MIT",
+  "documentation": "https://example.com/ectocontrol-modbus",
+  "config_flow": true,
+  "iot_class": "local_polling",
+  "quality_scale": "silver"
+}
