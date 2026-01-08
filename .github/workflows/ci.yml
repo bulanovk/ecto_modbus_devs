@@ -44,7 +44,7 @@ jobs:
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-${{ runner.os }}
           path: |
             coverage.xml
             htmlcov
