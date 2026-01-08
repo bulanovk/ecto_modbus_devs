@@ -4,6 +4,43 @@ from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
 from custom_components.ectocontrol_modbus.const import DOMAIN
 
 
+class FakeDeviceEntry:
+    def __init__(self):
+        self.id = "test_device_id"
+
+
+class FakeDeviceRegistry:
+    def __init__(self):
+        self._devices = {}
+
+    def async_get_or_create(self, **kwargs):
+        entry = FakeDeviceEntry()
+        self._devices[entry.id] = entry
+        return entry
+
+    def async_get_device(self, identifiers=None, connections=None):
+        return None
+
+    def async_update_device(self, device_id, **kwargs):
+        pass
+
+
+class FakeServices:
+    def __init__(self):
+        self._registered = []
+
+    def async_register(self, domain, name, handler):
+        self._registered.append((domain, name, handler))
+
+    def async_remove(self, domain, name):
+        pass
+
+
+class FakeConfig:
+    def __init__(self):
+        self.config_dir = "/tmp/config"
+
+
 class FakeEntry:
     def __init__(self, entry_id="test_entry"):
         self.entry_id = entry_id
@@ -32,6 +69,18 @@ class FakeGateway:
 
     async def reset_boiler_errors(self):
         pass
+
+    def get_manufacturer_code(self):
+        return None
+
+    def get_model_code(self):
+        return None
+
+    def get_hw_version(self):
+        return None
+
+    def get_sw_version(self):
+        return None
 
 
 class FakeCoordinator:
@@ -74,12 +123,16 @@ async def test_async_setup_entry_creates_components():
 
     hass = MagicMock()
     hass.data = {DOMAIN: {}}
+    hass.config = FakeConfig()
+    hass.services = FakeServices()
     entry = FakeEntry()
 
-    with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
          patch("custom_components.ectocontrol_modbus.BoilerGateway") as MockGateway, \
          patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator") as MockCoord:
 
+        mock_get_dr.return_value = FakeDeviceRegistry()
         MockProtocol.return_value = FakeProtocol()
         MockGateway.return_value = FakeGateway(FakeProtocol(), 1)
         mock_coord = AsyncMock(spec=FakeCoordinator)
@@ -101,12 +154,16 @@ async def test_async_setup_entry_initial_refresh_exception():
 
     hass = MagicMock()
     hass.data = {DOMAIN: {}}
+    hass.config = FakeConfig()
+    hass.services = FakeServices()
     entry = FakeEntry()
 
-    with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
          patch("custom_components.ectocontrol_modbus.BoilerGateway") as MockGateway, \
          patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator") as MockCoord:
 
+        mock_get_dr.return_value = FakeDeviceRegistry()
         MockProtocol.return_value = FakeProtocol()
         MockGateway.return_value = FakeGateway(FakeProtocol(), 1)
         mock_coord = AsyncMock(spec=FakeCoordinator)
@@ -125,9 +182,12 @@ async def test_service_handler_single_entry():
 
     hass = MagicMock()
     hass.data = {DOMAIN: {}}
+    hass.config = FakeConfig()
+    hass.services = FakeServices()
     entry = FakeEntry()
 
-    with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol") as MockProtocol, \
          patch("custom_components.ectocontrol_modbus.BoilerGateway") as MockGateway, \
          patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator") as MockCoord:
 
@@ -143,15 +203,16 @@ async def test_service_handler_single_entry():
         mock_coord = AsyncMock(spec=FakeCoordinator)
         MockCoord.return_value = mock_coord
 
+        mock_get_dr.return_value = FakeDeviceRegistry()
+
         await async_setup_entry(hass, entry)
 
         # Extract and call the registered service handler
-        registered_services = hass.services.async_register.call_args_list
+        registered_services = hass.services._registered
         assert len(registered_services) >= 2
 
         # Get the reboot service handler
-        reboot_call = registered_services[0]
-        reboot_handler = reboot_call[0][2]  # lambda is the third arg
+        reboot_handler = registered_services[0][2]
 
         # Simulate a service call with no entry_id (should use implicit single entry)
         fake_call = MagicMock()

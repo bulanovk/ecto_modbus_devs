@@ -5,12 +5,41 @@ from custom_components.ectocontrol_modbus import async_setup_entry, async_unload
 from custom_components.ectocontrol_modbus.const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
 
 
+class FakeDeviceEntry:
+    def __init__(self):
+        self.id = "test_device_id"
+
+
+class FakeDeviceRegistry:
+    def __init__(self):
+        self._devices = {}
+
+    def async_get_or_create(self, **kwargs):
+        entry = FakeDeviceEntry()
+        self._devices[entry.id] = entry
+        return entry
+
+    def async_get_device(self, identifiers=None, connections=None):
+        return None
+
+    def async_update_device(self, device_id, **kwargs):
+        pass
+
+
 class FakeServices:
     def __init__(self):
         self._registered = {}
 
     def async_register(self, domain, name, handler):
         self._registered[(domain, name)] = handler
+
+    def async_remove(self, domain, name):
+        self._registered.pop((domain, name), None)
+
+
+class FakeConfig:
+    def __init__(self):
+        self.config_dir = "/tmp/config"
 
 
 class FakeCoordinator:
@@ -59,6 +88,7 @@ class FakeHass:
     def __init__(self):
         self.data = {}
         self.services = FakeServices()
+        self.config = FakeConfig()
 
 
 class FakeEntry:
@@ -70,6 +100,7 @@ class FakeEntry:
 @pytest.mark.asyncio
 async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
     """Test async_setup_entry creates gateway/protocol/coordinator and registers services."""
+    from unittest.mock import patch
     from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
     from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
     from custom_components.ectocontrol_modbus.coordinator import BoilerDataUpdateCoordinator
@@ -86,16 +117,19 @@ async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
     hass = FakeHass()
     entry = FakeEntry("entry1", "/dev/ttyUSB0", 1)
 
-    ok = await async_setup_entry(hass, entry)
-    assert ok is True
-    assert "entry1" in hass.data[DOMAIN]
-    assert hass.services._registered[(DOMAIN, "reboot_adapter")]
-    assert hass.services._registered[(DOMAIN, "reset_boiler_errors")]
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+        mock_get_dr.return_value = FakeDeviceRegistry()
+        ok = await async_setup_entry(hass, entry)
+        assert ok is True
+        assert "entry1" in hass.data[DOMAIN]
+        assert hass.services._registered[(DOMAIN, "reboot_adapter")]
+        assert hass.services._registered[(DOMAIN, "reset_boiler_errors")]
 
 
 @pytest.mark.asyncio
 async def test_async_unload_entry_with_multiple_entries(monkeypatch):
     """Test that services are NOT removed if other entries remain."""
+    from unittest.mock import patch
     from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
     from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
     from custom_components.ectocontrol_modbus.coordinator import BoilerDataUpdateCoordinator
@@ -112,13 +146,15 @@ async def test_async_unload_entry_with_multiple_entries(monkeypatch):
     entry1 = FakeEntry("entry1", "/dev/ttyUSB0", 1)
     entry2 = FakeEntry("entry2", "/dev/ttyUSB1", 2)
 
-    await async_setup_entry(hass, entry1)
-    await async_setup_entry(hass, entry2)
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+        mock_get_dr.return_value = FakeDeviceRegistry()
+        await async_setup_entry(hass, entry1)
+        await async_setup_entry(hass, entry2)
 
-    # unload only entry1
-    ok = await async_unload_entry(hass, entry1)
-    assert ok is True
-    assert "entry1" not in hass.data[DOMAIN]
-    assert "entry2" in hass.data[DOMAIN]
-    # services should still be registered because entry2 remains
-    assert (DOMAIN, "reboot_adapter") in hass.services._registered
+        # unload only entry1
+        ok = await async_unload_entry(hass, entry1)
+        assert ok is True
+        assert "entry1" not in hass.data[DOMAIN]
+        assert "entry2" in hass.data[DOMAIN]
+        # services should still be registered because entry2 remains
+        assert (DOMAIN, "reboot_adapter") in hass.services._registered

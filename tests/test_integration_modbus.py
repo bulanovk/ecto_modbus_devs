@@ -14,6 +14,27 @@ from unittest.mock import MagicMock, patch
 from custom_components.ectocontrol_modbus.const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
 
 
+class FakeDeviceEntry:
+    def __init__(self):
+        self.id = "test_device_id"
+
+
+class FakeDeviceRegistry:
+    def __init__(self):
+        self._devices = {}
+
+    def async_get_or_create(self, **kwargs):
+        entry = FakeDeviceEntry()
+        self._devices[entry.id] = entry
+        return entry
+
+    def async_get_device(self, identifiers=None, connections=None):
+        return None
+
+    def async_update_device(self, device_id, **kwargs):
+        pass
+
+
 class FakeRtuMaster:
     def __init__(self, serial):
         # store last write calls
@@ -50,7 +71,12 @@ class FakeRtuMaster:
 async def test_full_setup_and_coordinator_poll(tmp_path):
     """Run a full setup and coordinator poll with mocked RtuMaster."""
     # patch serial.Serial and modbus_tk.modbus_rtu.RtuMaster used in ModbusProtocol._connect_sync
-    with patch("serial.Serial") as MockSerial, patch("modbus_tk.modbus_rtu.RtuMaster", new=FakeRtuMaster):
+    with patch("serial.Serial") as MockSerial, \
+         patch("modbus_tk.modbus_rtu.RtuMaster", new=FakeRtuMaster), \
+         patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+
+        mock_get_dr.return_value = FakeDeviceRegistry()
+
         # import inside patch context to ensure classes use patched RtuMaster
         from custom_components.ectocontrol_modbus import async_setup_entry
         from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
@@ -62,6 +88,8 @@ async def test_full_setup_and_coordinator_poll(tmp_path):
             def __init__(self):
                 self.data = {DOMAIN: {}}
                 self.services = MagicMock()
+                self.config = MagicMock()
+                self.config.config_dir = "/tmp/config"
 
         hass = FakeHass()
 
