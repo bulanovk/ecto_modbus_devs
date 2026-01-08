@@ -1,5 +1,7 @@
 import pytest
 
+from unittest.mock import patch
+
 from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
 from custom_components.ectocontrol_modbus.coordinator import BoilerDataUpdateCoordinator
 
@@ -20,12 +22,14 @@ async def test_coordinator_updates_gateway_cache():
     proto = DummyProtocol(regs=[100 + i for i in range(23)])
     gw = BoilerGateway(proto, slave_id=7)
 
-    coord = BoilerDataUpdateCoordinator(hass=None, gateway=gw, name="test")
+    # Mock frame.report_usage to avoid "Frame helper not set up" error in HA 2025.12+
+    with patch("homeassistant.helpers.frame.report_usage"):
+        coord = BoilerDataUpdateCoordinator(hass=None, gateway=gw, name="test")
 
-    data = await coord._async_update_data()
+        data = await coord._async_update_data()
 
-    # verify returned mapping and gateway cache
-    assert isinstance(data, dict)
-    assert gw.cache == data
-    assert data[0x0010] == 100
-    assert data[0x0010 + 22] == 100 + 22
+        # verify returned mapping and gateway cache
+        assert isinstance(data, dict)
+        assert gw.cache == data
+        assert data[0x0010] == 100
+        assert data[0x0010 + 22] == 100 + 22

@@ -101,15 +101,18 @@ async def test_modbus_error_read_returns_none_and_coordinator_update_failed():
         proto = ModbusProtocol(port="/dev/null")
         await proto.connect()
         gw = BoilerGateway(proto, slave_id=1)
-        coord = BoilerDataUpdateCoordinator(MagicMock(), gw, name="test")
 
-        # read_registers should return None on ModbusError
-        rr = await proto.read_registers(1, 0x0010, 2)
-        assert rr is None
+        # Mock frame.report_usage to avoid "Frame helper not set up" error in HA 2025.12+
+        with patch("homeassistant.helpers.frame.report_usage"):
+            coord = BoilerDataUpdateCoordinator(MagicMock(), gw, name="test")
 
-        # coordinator update should raise UpdateFailed when None is returned
-        with pytest.raises(UpdateFailed):
-            await coord._async_update_data()
+            # read_registers should return None on ModbusError
+            rr = await proto.read_registers(1, 0x0010, 2)
+            assert rr is None
+
+            # coordinator update should raise UpdateFailed when None is returned
+            with pytest.raises(UpdateFailed):
+                await coord._async_update_data()
 
         await proto.disconnect()
 
