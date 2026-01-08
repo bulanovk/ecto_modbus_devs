@@ -1,8 +1,8 @@
 # Ectocontrol Modbus Adapter v2 — Home Assistant Integration
 
-[![GitHub Release](https://img.shields.io/github/release/your-username/ectocontrol-modbus-boiler.svg)](https://github.com/your-username/ectocontrol-modbus-boiler/releases)
+[![GitHub Release](https://img.shields.io/github/release/bulanovk/ecto_modbus_devs.svg)](https://github.com/bulanovk/ecto_modbus_devs/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2024.1%2B-blue)](https://www.home-assistant.io/)
+[![Home Assistant](https://img.shields.io/badge/Home_Assistant-2025.12%2B-blue)](https://www.home-assistant.io/)
 
 **Ectocontrol Modbus Adapter v2** is a Home Assistant custom integration that exposes gas boiler sensors, controls, and diagnostics via RS-485 Modbus RTU protocol.
 
@@ -42,7 +42,7 @@
 
 **Via HACS (Recommended)**:
 1. Open Home Assistant → Settings → Devices & Services → Custom repositories
-2. Add: `https://github.com/your-username/ectocontrol-modbus-boiler` (Category: Integration)
+2. Add: `https://github.com/bulanovk/ecto_modbus_devs` (Category: Integration)
 3. Install the integration and restart Home Assistant
 
 **Manual**:
@@ -110,8 +110,8 @@ custom_components/ectocontrol_modbus/
 ### Setup
 
 ```bash
-git clone https://github.com/your-username/ectocontrol-modbus-boiler.git
-cd ectocontrol-modbus-boiler
+git clone https://github.com/bulanovk/ecto_modbus_devs.git
+cd ecto_modbus_devs
 
 python -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
@@ -218,7 +218,7 @@ See [HARDWARE_VALIDATION.md](HARDWARE_VALIDATION.md) for tested hardware combina
 - Enable debug logging: `logger.logs.custom_components.ectocontrol_modbus: debug`
 
 ### More Help
-See [docs/USAGE.md#troubleshooting](docs/USAGE.md#troubleshooting) or open an [issue](https://github.com/your-username/ectocontrol-modbus-boiler/issues).
+See [docs/USAGE.md#troubleshooting](docs/USAGE.md#troubleshooting) or open an [issue](https://github.com/bulanovk/ecto_modbus_devs/issues).
 
 ---
 
