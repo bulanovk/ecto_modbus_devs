@@ -103,8 +103,8 @@ custom_components/ectocontrol_modbus/
 
 ### Prerequisites
 
-- Python 3.10+
-- Home Assistant 2024.1+ (for local testing)
+- Python 3.13+
+- Home Assistant 2025.12+ (for local testing)
 - `modbus-tk>=1.1.5`, `pyserial>=3.5`
 
 ### Setup

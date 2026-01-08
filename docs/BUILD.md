@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- **Python**: 3.10 or later
-- **Home Assistant**: 2024.1 or later (for local testing)
+- **Python**: 3.13 or later
+- **Home Assistant**: 2025.12 or later (for local testing)
 - **Git**: For cloning and version control
 - **Virtual Environment**: Recommended (`venv` or `conda`)
 
@@ -14,8 +14,8 @@
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-username/ectocontrol-modbus-boiler.git
-cd ectocontrol-modbus-boiler
+git clone https://github.com/bulanovk/ecto_modbus_devs.git
+cd ecto_modbus_devs
 ```
 
 ### 2. Create Virtual Environment

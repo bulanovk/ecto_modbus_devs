@@ -4,8 +4,8 @@
 
 **Ectocontrol Modbus Adapter v2** is a Home Assistant custom integration that exposes gas boiler status and controls via RS-485 Modbus RTU protocol.
 
-- **Target**: Home Assistant 2024.1+
-- **Python**: 3.10+
+- **Target**: Home Assistant 2025.12+
+- **Python**: 3.13+
 - **Protocol**: Modbus RTU (19200 baud, no parity)
 - **Hardware**: Ectocontrol Modbus Adapter v2 connected to boiler via RS-485
 
