@@ -11,4 +11,4 @@ pytest-asyncio>=1.3.0
 pytest-cov>=6.0
 
 # Home Assistant (required for testing the integration)
-homeassistant>=2025.12.5
+homeassistant
