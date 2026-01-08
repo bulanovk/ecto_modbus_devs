@@ -1,0 +1,14 @@
+# Test dependencies for Ectocontrol Modbus integration
+# Install with: pip install -r requirements_test.txt
+
+# Runtime dependencies (from requirements.txt)
+modbus-tk>=1.1.5
+pyserial>=3.5
+
+# Testing framework
+pytest>=9.0.2
+pytest-asyncio>=1.3.0
+pytest-cov>=6.0
+
+# Home Assistant (required for testing the integration)
+homeassistant>=2025.12.0

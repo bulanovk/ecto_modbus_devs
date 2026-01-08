@@ -14,6 +14,7 @@
   "license": "MIT",
   "documentation": "https://example.com/ectocontrol-modbus",
   "config_flow": true,
+  "homeassistant": "2025.12.0",
   "platforms": ["sensor", "switch", "number", "binary_sensor", "climate", "button"],
   "iot_class": "local_polling",
   "quality_scale": "silver"
