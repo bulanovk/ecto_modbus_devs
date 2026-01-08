@@ -5,6 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.number import NumberEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..const import DOMAIN
 
@@ -24,6 +25,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
 
 
 class CHSetpointNumber(CoordinatorEntity, NumberEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator):
         super().__init__(coordinator)
         self._attr_name = "CH Setpoint"
@@ -34,6 +37,13 @@ class CHSetpointNumber(CoordinatorEntity, NumberEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_ch_setpoint"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def native_value(self):
@@ -47,6 +57,8 @@ class CHSetpointNumber(CoordinatorEntity, NumberEntity):
 
 
 class CHMinMaxNumber(CoordinatorEntity, NumberEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, name: str, key: str, min_value: int = 0, max_value: int = 100):
         super().__init__(coordinator)
         self._attr_name = name
@@ -58,6 +70,13 @@ class CHMinMaxNumber(CoordinatorEntity, NumberEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_{self._key}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def native_value(self):
@@ -77,6 +96,8 @@ class CHMinMaxNumber(CoordinatorEntity, NumberEntity):
 
 
 class DHWSetpointNumber(CoordinatorEntity, NumberEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator):
         super().__init__(coordinator)
         self._attr_name = "DHW Setpoint"
@@ -89,6 +110,13 @@ class DHWSetpointNumber(CoordinatorEntity, NumberEntity):
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_dhw_setpoint"
 
     @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
+
+    @property
     def native_value(self):
         return self.coordinator.gateway._get_reg(0x0037)
 
@@ -99,6 +127,8 @@ class DHWSetpointNumber(CoordinatorEntity, NumberEntity):
 
 
 class MaxModulationNumber(CoordinatorEntity, NumberEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator):
         super().__init__(coordinator)
         self._attr_name = "Max Modulation"
@@ -109,6 +139,13 @@ class MaxModulationNumber(CoordinatorEntity, NumberEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_max_modulation"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def native_value(self):

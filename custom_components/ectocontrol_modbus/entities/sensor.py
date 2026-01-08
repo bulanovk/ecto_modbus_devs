@@ -5,6 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..const import DOMAIN
 
@@ -34,6 +35,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
 
 
 class BoilerSensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, getter_name: str, name: str, unit: str):
         super().__init__(coordinator)
         self._getter = getter_name
@@ -43,6 +46,13 @@ class BoilerSensor(CoordinatorEntity, SensorEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_{self._getter}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def native_value(self):

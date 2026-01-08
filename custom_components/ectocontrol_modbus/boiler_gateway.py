@@ -21,6 +21,8 @@ from .const import (
     REGISTER_COMMAND,
     REGISTER_COMMAND_RESULT,
     REGISTER_CIRCUIT_ENABLE,
+    REGISTER_STATUS,
+    REGISTER_VERSION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -140,6 +142,29 @@ class BoilerGateway:
         if raw is None or raw == 0xFFFF:
             return None
         return raw
+
+    def get_hw_version(self) -> Optional[int]:
+        """Extract hardware version from REGISTER_VERSION (0x0011 MSB)."""
+        raw = self._get_reg(REGISTER_VERSION)
+        if raw is None:
+            return None
+        msb = (raw >> 8) & 0xFF
+        return None if msb == 0xFF else msb
+
+    def get_sw_version(self) -> Optional[int]:
+        """Extract software version from REGISTER_VERSION (0x0011 LSB)."""
+        raw = self._get_reg(REGISTER_VERSION)
+        if raw is None:
+            return None
+        lsb = raw & 0xFF
+        return None if lsb == 0xFF else lsb
+
+    def get_adapter_type(self) -> Optional[int]:
+        """Extract adapter type from REGISTER_STATUS (0x0010 bits 0-2)."""
+        raw = self._get_reg(REGISTER_STATUS)
+        if raw is None:
+            return None
+        return (raw >> 0) & 0x07  # bits 0-2
 
     def get_ch_setpoint_active(self) -> Optional[float]:
         raw = self._get_reg(REGISTER_CH_SETPOINT_ACTIVE)

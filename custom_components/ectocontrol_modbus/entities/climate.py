@@ -9,6 +9,7 @@ from homeassistant.components.climate import (
 )
 from homeassistant.const import ATTR_TEMPERATURE
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..const import DOMAIN
 
@@ -22,6 +23,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 class BoilerClimate(CoordinatorEntity, ClimateEntity):
     """Basic climate entity backed by BoilerGateway via coordinator."""
 
+    _attr_has_entity_name = True
     _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
 
@@ -32,6 +34,13 @@ class BoilerClimate(CoordinatorEntity, ClimateEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_climate"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def current_temperature(self) -> float | None:

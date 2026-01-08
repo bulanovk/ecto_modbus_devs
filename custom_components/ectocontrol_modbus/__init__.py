@@ -5,8 +5,10 @@ Sets up per-entry Modbus protocol, gateway and coordinator and exposes services.
 from __future__ import annotations
 
 from typing import Any
+import asyncio
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 
 from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
 from .modbus_protocol import ModbusProtocol
@@ -40,12 +42,60 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         "coordinator": coordinator,
     }
 
+    # Create device in registry
+    device_registry = dr.async_get(hass)
+
+    # Build connections tuple for unique device identification
+    connections = {(dr.CONNECTION_NETWORK_MAC, f"{port}:{slave}")}
+
+    # Build device name from config or use default
+    from .const import CONF_NAME
+    device_name = entry.data.get(CONF_NAME) or f"Ectocontrol Boiler {slave}"
+
+    # Create initial device info (will be updated after first poll)
+    device_entry = device_registry.async_get_or_create(
+        config_entry_id=entry.entry_id,
+        connections=connections,
+        identifiers={(DOMAIN, f"{port}:{slave}")},
+        name=device_name,
+        manufacturer="Ectocontrol",
+        model="Modbus Adapter v2",
+        sw_version=None,
+        hw_version=None,
+    )
+
+    # Store device_id for entity reference
+    hass.data[DOMAIN][entry.entry_id]["device_id"] = device_entry.id
+
     # perform initial refresh
     try:
         await coordinator.async_config_entry_first_refresh()
     except Exception:
         # don't block setup on initial failure; coordinator will retry
         pass
+
+    # Update device info with actual data from gateway
+    manufacturer_code = gateway.get_manufacturer_code()
+    model_code = gateway.get_model_code()
+    hw_version = gateway.get_hw_version()
+    sw_version = gateway.get_sw_version()
+
+    # Map codes to readable names
+    manufacturer_name = "Ectocontrol"
+    if manufacturer_code is not None:
+        manufacturer_name = f"Ectocontrol (Mfg: {manufacturer_code})"
+
+    model_name = "Modbus Adapter v2"
+    if model_code is not None:
+        model_name = f"Adapter Model {model_code}"
+
+    device_registry.async_update_device(
+        device_entry.id,
+        manufacturer=manufacturer_name,
+        model=model_name,
+        sw_version=str(sw_version) if sw_version is not None else None,
+        hw_version=str(hw_version) if hw_version is not None else None,
+    )
 
     # Forward entry setups for platforms (include newly added platforms)
     try:

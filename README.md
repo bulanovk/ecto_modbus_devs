@@ -21,12 +21,14 @@
 - Reboot adapter and reset error codes
 
 ✅ **Home Assistant Integration**
+- Device registry support — each boiler appears as a separate device
 - Climate entity for primary thermostat control
 - 11+ sensor entities for data logging and automation
 - Switch entities for on/off control
 - Number entities for setpoint adjustment
 - Button entities for commands
 - Full availability tracking and error handling
+- Automatic entity naming with device prefix (e.g., "Kitchen Boiler CH Temperature")
 
 ✅ **Reliability**
 - Automatic retry with exponential backoff
@@ -72,7 +74,6 @@
 | [docs/BUILD.md](docs/BUILD.md) | 🔨 Development setup, testing, contributing, adding features |
 | [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) | 📋 Detailed technical specification & design |
 | [PR_CHECKLIST.md](PR_CHECKLIST.md) | ✅ Feature tracking & development tasks |
-| [.github/copilot-instructions.md](.github/copilot-instructions.md) | 🤖 GitHub Copilot guidance |
 
 ---
 
@@ -137,7 +138,10 @@ pytest tests/test_entities_climate.py -v
 
 1. Add register constant in `const.py`
 2. Add getter/setter in `boiler_gateway.py`
-3. Add entity class in appropriate `entities/*.py` file
+3. Add entity class in appropriate `entities/*.py` file with:
+   - `_attr_has_entity_name = True` class attribute
+   - `device_info` property with correct identifiers
+   - `unique_id` property following naming convention
 4. Register entity in `async_setup_entry()`
 5. Add tests
 6. Run full test suite: `pytest -q`

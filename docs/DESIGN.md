@@ -52,7 +52,7 @@ def get_ch_temperature(self) -> Optional[float]:
 
 ### Layer 3: Home Assistant Integration — Coordinator & Entities
 
-**Files**: `coordinator.py`, `entities/*.py`
+**Files**: `coordinator.py`, `entities/*.py`, `__init__.py`
 
 - **Coordinator** (`BoilerDataUpdateCoordinator`):
   - Periodically reads all registers (0x0010..0x0026) in a single batch
@@ -60,19 +60,40 @@ def get_ch_temperature(self) -> Optional[float]:
   - Tracks update success/failure; marks device unavailable after 3 consecutive failures
   - Polling interval: 15 seconds (configurable in `const.py`)
 
+- **Device Registry**:
+  - Each config entry (slave_id on port) creates a separate device in Home Assistant
+  - Device identifiers use `{DOMAIN, "port:slave_id"}` format for uniqueness
+  - Device info updated after first coordinator poll with manufacturer, model, version data
+  - All entities associated with their device via `device_info` property
+
 - **Entities** (Sensor, Switch, Number, BinarySensor, Climate, Button):
   - Read-only access to gateway cache via gateway getters
   - Write operations call gateway async helpers then refresh coordinator
   - All entities extend `CoordinatorEntity` for automatic availability tracking
   - All entities have unique ID in format `ectocontrol_{slave_id}_{feature}`
+  - All entities use `_attr_has_entity_name = True` for automatic device-prefixed names
+  - All entities provide `device_info` property for device association
 
 **Example entity flow**:
 ```python
 class CHTemperatureSensor(CoordinatorEntity, SensorEntity):
+    _attr_has_entity_name = True
+
+    @property
+    def unique_id(self) -> str:
+        return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_ch_temperature"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
+
     @property
     def native_value(self):
         return self.coordinator.gateway.get_ch_temperature()  # Read from cache via gateway
-    
+
     @property
     def available(self):
         return self.coordinator.last_update_success  # Coordinator tracks availability
@@ -168,7 +189,9 @@ User interaction when setting up the integration:
    - Slave ID unique for this port
    - Connection test: read register 0x0010 successfully
 6. Entry created; async_setup_entry called
-7. Entities created and polling begins
+7. Device created in registry with default info
+8. Entities created and polling begins
+9. Device info updated after first successful poll with manufacturer/model/version
 ```
 
 ---

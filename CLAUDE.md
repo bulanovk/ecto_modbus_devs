@@ -12,6 +12,77 @@ This is a Home Assistant custom integration for Ectocontrol Modbus Adapter v2, w
 - `pyserial>=3.5` (Serial port I/O)
 - `pytest>=9.0.2` + `pytest-asyncio>=1.3.0` (testing)
 
+---
+
+## Component Requirements Summary
+
+### Purpose
+Expose gas boiler sensors, controls, and diagnostics via RS-485 Modbus RTU protocol using the Ectocontrol Modbus Adapter v2 hardware.
+
+### Technical Requirements
+| Category | Requirement |
+|----------|-------------|
+| **Python** | 3.12+ |
+| **Home Assistant** | 2025.12+ |
+| **Protocol** | Modbus RTU (19200 baud, 8N1, half-duplex) |
+| **Hardware** | Ectocontrol Modbus Adapter v2 + RS-485 serial interface |
+
+### Required Entity Types (Per Boiler)
+| Type | Required Entities |
+|------|-------------------|
+| **Sensors** (11+) | CH Temp, DHW Temp, Pressure, Flow, Modulation, Outdoor Temp, CH Setpoint Active, Main Error, Add Error, Manufacturer Code, Model Code |
+| **Binary Sensors** | Burner On, Heating Enabled, DHW Enabled |
+| **Switches** | Heating Enable, DHW Enable |
+| **Numbers** | CH Setpoint, CH Min/Max Limit, DHW Min/Max Limit, DHW Setpoint, Max Modulation |
+| **Climate** | Primary thermostat control (Heat/Off modes) |
+| **Buttons** | Reboot Adapter, Reset Boiler Errors |
+
+### Configuration Flow Requirements
+1. **Port Selection** - List available serial ports (`/dev/ttyUSB*`, `COM*`)
+2. **Slave ID Input** - Range 1-32 (validates uniqueness per port)
+3. **Connection Test** - Read register 0x0010 to verify communication
+4. **Friendly Name** - User-provided device name
+
+### Error Handling Requirements
+| Layer | Behavior |
+|-------|----------|
+| **ModbusProtocol** | Return `None` (reads) or `False` (writes); log errors |
+| **BoilerGateway** | Return `None` for invalid markers (0x7FFF, 0xFF, 0x7F) |
+| **Coordinator** | Raise `UpdateFailed`; 3 consecutive failures → device unavailable |
+| **Entities** | Show unavailable when `coordinator.last_update_success == False` |
+
+### Invalid/Unsupported Value Markers
+- `0x7FFF` (16-bit signed): No sensor or error
+- `0xFF` (8-bit unsigned): Unsupported/unavailable
+- `0x7F` (8-bit signed): Invalid
+
+### Entity Unique ID Format
+```
+ectocontrol_{slave_id}_{feature}
+```
+
+### Device Registry
+Each config entry (slave_id on a port) creates a separate device in Home Assistant:
+- **Device Identifiers**: `{DOMAIN, "port:slave_id"}` (e.g., `{"ectocontrol_modbus", "/dev/ttyUSB0:1"}`)
+- **Device Info**: Updated after first coordinator poll with manufacturer, model, hw_version, sw_version
+- **Entity Association**: All entities for a slave_id belong to the same device
+- **Entity Naming**: All entities use `_attr_has_entity_name = True` for automatic device-prefixed names
+
+### Polling Requirements
+- **Default interval**: 15 seconds
+- **Batch read**: All sensors read in single multi-register command (0x0010..0x0026 = 23 registers)
+- **Timeout**: 2-3 seconds per Modbus operation
+
+### Remaining Implementation Tasks (from PR_CHECKLIST.md)
+- [ ] Climate entity implementation
+- [ ] Button entities for reboot/reset commands
+- [ ] Full switch/number entity coverage
+- [ ] Adapter-type and adapter-reboot-code sensors
+- [ ] Centralized retry policy with exponential backoff
+- [ ] Slave ID range narrowed to 1-32
+
+---
+
 ## Project Structure
 
 ```
@@ -358,10 +429,21 @@ async def test_my_async_function():
 
 3. **Add entity** in `entities/sensor.py`:
    ```python
+   from homeassistant.helpers.device_registry import DeviceInfo
+
    class NewSensor(CoordinatorEntity, SensorEntity):
+       _attr_has_entity_name = True
+
        @property
        def unique_id(self) -> str:
            return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_new_sensor"
+
+       @property
+       def device_info(self) -> DeviceInfo:
+           """Return device info for entity association."""
+           return DeviceInfo(
+               identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+           )
 
        @property
        def native_value(self):
@@ -395,7 +477,25 @@ async def test_my_async_function():
 
 2. **Add entity** in `entities/switch.py`:
    ```python
+   from homeassistant.helpers.device_registry import DeviceInfo
+
    class NewControlSwitch(CoordinatorEntity, SwitchEntity):
+       _attr_has_entity_name = True
+
+       def __init__(self, coordinator):
+           super().__init__(coordinator)
+           self._attr_name = "New Control"
+
+       @property
+       def unique_id(self) -> str:
+           return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_new_control"
+
+       @property
+       def device_info(self) -> DeviceInfo:
+           return DeviceInfo(
+               identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+           )
+
        async def async_turn_on(self, **kwargs) -> None:
            await self.coordinator.gateway.set_new_control(True)
            await self.coordinator.async_request_refresh()
@@ -408,7 +508,28 @@ async def test_my_async_function():
 1. **Add register constant** and/or use existing setter in `boiler_gateway.py`
 2. **Create NumberEntity subclass**:
    ```python
+   from homeassistant.helpers.device_registry import DeviceInfo
+
    class NewSetpointNumber(CoordinatorEntity, NumberEntity):
+       _attr_has_entity_name = True
+
+       def __init__(self, coordinator):
+           super().__init__(coordinator)
+           self._attr_name = "New Setpoint"
+           self._attr_native_min_value = 0
+           self._attr_native_max_value = 100
+           self._attr_native_step = 1
+
+       @property
+       def unique_id(self) -> str:
+           return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_new_setpoint"
+
+       @property
+       def device_info(self) -> DeviceInfo:
+           return DeviceInfo(
+               identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+           )
+
        @property
        def native_value(self):
            return self.coordinator.gateway.get_new_setpoint()
@@ -424,11 +545,14 @@ async def test_my_async_function():
 ### ✅ DO
 
 - Always add a `unique_id` property to entities
+- Always add a `device_info` property to entities for device association
+- Always set `_attr_has_entity_name = True` on entity classes for automatic naming
 - Call `async_request_refresh()` after write operations
 - Check for invalid markers (`0x7FFF`, `0xFF`) and return `None`
 - Use `_LOGGER.error()` for errors, `_LOGGER.debug()` for verbose logs
 - Test with `FakeGateway` and `DummyCoordinator` to isolate entity logic
 - Wrap modbus-tk calls in `run_in_executor()` to avoid blocking
+- Use consistent device identifiers: `{DOMAIN, "port:slave_id"}`
 
 ### ❌ DON'T
 
@@ -438,6 +562,8 @@ async def test_my_async_function():
 - Hardcode register addresses in entity files; use constants
 - Skip tests for new functionality
 - Modify registers without going through `BoilerGateway` write helpers
+- Forget to add `device_info` property to new entity classes
+- Hardcode device identifiers; use the port:slave_id format
 
 ### Register Bitfield Manipulation
 
@@ -487,6 +613,8 @@ pytest tests/test_modbus_protocol.py -vv
 - [ ] Entity class created in appropriate `entities/*.py` file
 - [ ] Entity registered in `async_setup_entry()`
 - [ ] Unique ID format: `ectocontrol_{slave_id}_{feature}`
+- [ ] Device info property added with correct identifiers
+- [ ] `_attr_has_entity_name = True` set on entity class
 - [ ] Unit/scaling applied correctly
 - [ ] Invalid markers (`0x7FFF`, `0xFF`) handled → return `None`
 - [ ] Tests written (fake gateway, coordinator, entity state/action)

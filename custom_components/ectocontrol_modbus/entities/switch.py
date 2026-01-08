@@ -5,6 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from ..const import DOMAIN
 
@@ -20,6 +21,8 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
 
 
 class CircuitSwitch(CoordinatorEntity, SwitchEntity):
+    _attr_has_entity_name = True
+
     def __init__(self, coordinator, bit: int = 0, name: str | None = None):
         super().__init__(coordinator)
         self._bit = bit
@@ -28,6 +31,13 @@ class CircuitSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def unique_id(self) -> str:
         return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_circuit_{self._bit}"
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info for entity association."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+        )
 
     @property
     def is_on(self) -> bool | None:
