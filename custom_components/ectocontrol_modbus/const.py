@@ -11,6 +11,20 @@ MODBUS_BAUDRATE = 19200
 MODBUS_TIMEOUT = 2.0
 MODBUS_RETRY_COUNT = 3
 
+# Serial port patterns to include (USB adapters, RS-485 converters, hardware serial)
+# Linux: ttyUSB* (USB-Serial), ttyACM* (USB CDC), ttyAMA* (Raspberry Pi UART)
+# Windows: COM*
+# macOS: cu.* or tty.*
+SERIAL_PORT_PATTERNS = [
+    "/dev/ttyUSB*",   # Linux USB-Serial adapters (FTDI, CP210x, CH340, etc.)
+    "/dev/ttyACM*",   # Linux USB CDC devices (Arduino, etc.)
+    "/dev/ttyAMA*",   # Raspberry Pi hardware UART
+    "/dev/ttyS*",     # Linux hardware serial ports
+    "COM*",           # Windows COM ports
+    "/dev/cu.*",      # macOS serial ports (call-out)
+    "/dev/tty.*",     # macOS serial ports (terminal)
+]
+
 # Register addresses
 REGISTER_STATUS = 0x0010
 REGISTER_VERSION = 0x0011

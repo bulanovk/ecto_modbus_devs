@@ -14,6 +14,26 @@ This is a Home Assistant custom integration for Ectocontrol Modbus Adapter v2, w
 
 ---
 
+## Virtual Environment Requirement
+
+**IMPORTANT: Always use the `.venv` virtual environment when working with Python in this project.**
+
+Before running any Python commands (pytest, pylint, mypy, pip, python), ensure the virtual environment is activated:
+
+```bash
+# Windows
+.venv\Scripts\activate
+
+# Linux/macOS
+source .venv/bin/activate
+```
+
+Your prompt should show `(.venv)` when the environment is active.
+
+If you see `ModuleNotFoundError` or import errors, it usually means the virtual environment is not activated or dependencies are not installed.
+
+---
+
 ## Component Requirements Summary
 
 ### Purpose

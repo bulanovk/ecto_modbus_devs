@@ -1,6 +1,8 @@
 """Config flow for Ectocontrol Modbus Adapter v2 integration."""
 from __future__ import annotations
 
+import asyncio
+from fnmatch import fnmatch
 from typing import Any
 
 import serial.tools.list_ports
@@ -9,7 +11,7 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
-from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID, CONF_NAME
+from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID, CONF_NAME, SERIAL_PORT_PATTERNS
 from .modbus_protocol import ModbusProtocol
 
 
@@ -28,7 +30,12 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step where user provides port and slave id."""
-        ports = [p.device for p in serial.tools.list_ports.comports()]
+        # List all available serial ports and filter by supported patterns
+        all_ports = await asyncio.to_thread(serial.tools.list_ports.comports)
+        ports = [
+            p.device for p in all_ports
+            if any(fnmatch(p.device, pattern) for pattern in SERIAL_PORT_PATTERNS)
+        ]
 
         if user_input is None:
             schema = vol.Schema(
