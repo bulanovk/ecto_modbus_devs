@@ -12,15 +12,18 @@ from ..const import DOMAIN
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
-    # expose a single circuit switch (bit 0) as example
-    async_add_entities([CircuitSwitch(coordinator, bit=0)])
+    # expose heating enable (bit 0) and DHW enable (bit 1)
+    async_add_entities([
+        CircuitSwitch(coordinator, bit=0, name="Heating Enable"),
+        CircuitSwitch(coordinator, bit=1, name="DHW Enable"),
+    ])
 
 
 class CircuitSwitch(CoordinatorEntity, SwitchEntity):
-    def __init__(self, coordinator, bit: int = 0):
+    def __init__(self, coordinator, bit: int = 0, name: str | None = None):
         super().__init__(coordinator)
         self._bit = bit
-        self._attr_name = f"Circuit {bit}"
+        self._attr_name = name or f"Circuit {bit}"
 
     @property
     def unique_id(self) -> str:
@@ -30,6 +33,7 @@ class CircuitSwitch(CoordinatorEntity, SwitchEntity):
     def is_on(self) -> bool | None:
         # states may not reflect circuit enable; read from cache/register via gateway
         # this entity uses get_burner_on as a placeholder if no dedicated getter
+        # use constant from const if available; fallback to literal
         states = self.coordinator.gateway.cache.get(0x001D)
         if states is None:
             return None

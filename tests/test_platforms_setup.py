@@ -97,7 +97,7 @@ async def test_number_async_setup_entry():
 
     await number_setup(hass, entry, add_entities)
 
-    assert len(entities_added) == 1  # 1 number (CH Setpoint)
+    assert len(entities_added) == 5  # CH Setpoint, CH Min, CH Max, DHW Setpoint, Max Modulation
     assert hasattr(entities_added[0], "async_set_native_value")
 
 
@@ -125,5 +125,5 @@ async def test_switch_async_setup_entry():
 
     await switch_setup(hass, entry, add_entities)
 
-    assert len(entities_added) == 1  # 1 circuit switch
+    assert len(entities_added) == 2  # Heating Enable, DHW Enable
     assert all(hasattr(ent, "async_turn_on") for ent in entities_added)

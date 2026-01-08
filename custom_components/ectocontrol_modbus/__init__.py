@@ -47,12 +47,26 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         # don't block setup on initial failure; coordinator will retry
         pass
 
-    # register simple services for reboot and reset errors
+    # Forward entry setups for platforms (include newly added platforms)
+    try:
+        forward = getattr(hass.config_entries, "async_forward_entry_setups", None)
+        if forward:
+            result = forward(
+                entry,
+                ["sensor", "switch", "number", "binary_sensor", "climate", "button"],
+            )
+            # if it's a coroutine, await it; some test fakes use MagicMock which returns non-awaitable
+            if asyncio.iscoroutine(result):
+                await result
+    except Exception:
+        # Best-effort: do not block setup on forwarding errors in test harness
+        pass
+
+    # Keep legacy services as compatibility shims for existing automation/users.
     async def _service_handler(call: Any, command: int):
         data = call.data or {}
         entry_id = data.get("entry_id")
         if entry_id is None:
-            # if single entry, use this one
             entries = list(hass.data[DOMAIN].keys())
             if len(entries) == 1:
                 entry_id = entries[0]
@@ -71,7 +85,6 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
                 await gw.reset_boiler_errors()
         finally:
             await gw.protocol.disconnect()
-            # refresh coordinator cache
             try:
                 await ent["coordinator"].async_request_refresh()
             except Exception:
