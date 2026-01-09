@@ -20,7 +20,7 @@ class FakeCoordinator:
 @pytest.mark.asyncio
 async def test_sensor_async_setup_entry():
     """Test sensor platform async_setup_entry."""
-    from custom_components.ectocontrol_modbus.entities.sensor import async_setup_entry as sensor_setup
+    from custom_components.ectocontrol_modbus.sensor import async_setup_entry as sensor_setup
 
     hass = MagicMock(spec=HomeAssistant)
     entry = FakeEntry()
@@ -48,7 +48,7 @@ async def test_sensor_async_setup_entry():
 @pytest.mark.asyncio
 async def test_binary_sensor_async_setup_entry():
     """Test binary_sensor platform async_setup_entry."""
-    from custom_components.ectocontrol_modbus.entities.binary_sensor import async_setup_entry as binary_setup
+    from custom_components.ectocontrol_modbus.binary_sensor import async_setup_entry as binary_setup
 
     hass = MagicMock(spec=HomeAssistant)
     entry = FakeEntry()
@@ -76,7 +76,7 @@ async def test_binary_sensor_async_setup_entry():
 @pytest.mark.asyncio
 async def test_number_async_setup_entry():
     """Test number platform async_setup_entry."""
-    from custom_components.ectocontrol_modbus.entities.number import async_setup_entry as number_setup
+    from custom_components.ectocontrol_modbus.number import async_setup_entry as number_setup
 
     hass = MagicMock(spec=HomeAssistant)
     entry = FakeEntry()
@@ -104,7 +104,7 @@ async def test_number_async_setup_entry():
 @pytest.mark.asyncio
 async def test_switch_async_setup_entry():
     """Test switch platform async_setup_entry."""
-    from custom_components.ectocontrol_modbus.entities.switch import async_setup_entry as switch_setup
+    from custom_components.ectocontrol_modbus.switch import async_setup_entry as switch_setup
 
     hass = MagicMock(spec=HomeAssistant)
     entry = FakeEntry()

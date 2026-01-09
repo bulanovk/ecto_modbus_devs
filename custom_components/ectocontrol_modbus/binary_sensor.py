@@ -7,7 +7,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
-from ..const import DOMAIN
+from .const import DOMAIN
 
 
 BINARY_SENSORS = [

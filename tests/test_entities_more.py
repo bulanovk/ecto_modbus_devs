@@ -1,9 +1,9 @@
 """Tests for entity platforms covering missing branches."""
 import pytest
 
-from custom_components.ectocontrol_modbus.entities.sensor import BoilerSensor
-from custom_components.ectocontrol_modbus.entities.binary_sensor import BoilerBinarySensor
-from custom_components.ectocontrol_modbus.entities.switch import CircuitSwitch
+from custom_components.ectocontrol_modbus.sensor import BoilerSensor
+from custom_components.ectocontrol_modbus.binary_sensor import BoilerBinarySensor
+from custom_components.ectocontrol_modbus.switch import CircuitSwitch
 
 
 class DummyCoordinator:

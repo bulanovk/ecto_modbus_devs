@@ -1,6 +1,6 @@
 import pytest
 
-from custom_components.ectocontrol_modbus.entities.button import RebootAdapterButton, ResetErrorsButton
+from custom_components.ectocontrol_modbus.button import RebootAdapterButton, ResetErrorsButton
 
 
 class FakeGateway:

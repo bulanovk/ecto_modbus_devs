@@ -1,6 +1,6 @@
 import pytest
 
-from custom_components.ectocontrol_modbus.entities.climate import BoilerClimate
+from custom_components.ectocontrol_modbus.climate import BoilerClimate
 
 
 class FakeGateway:
