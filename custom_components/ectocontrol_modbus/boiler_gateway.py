@@ -18,6 +18,8 @@ from .const import (
     REGISTER_MODEL_CODE,
     REGISTER_CH_SETPOINT,
     REGISTER_CH_SETPOINT_ACTIVE,
+    REGISTER_DHW_SETPOINT,
+    REGISTER_MAX_MODULATION,
     REGISTER_COMMAND,
     REGISTER_COMMAND_RESULT,
     REGISTER_CIRCUIT_ENABLE,
@@ -176,6 +178,16 @@ class BoilerGateway:
             raw = raw - 0x10000
         return raw / 256.0
 
+    def get_ch_setpoint(self) -> Optional[float]:
+        """Get CH setpoint from register 0x0031 (scaled by 10)."""
+        raw = self._get_reg(REGISTER_CH_SETPOINT)
+        if raw is None or raw == 0x7FFF:
+            return None
+        # i16 scaled by 10
+        if raw >= 0x8000:
+            raw = raw - 0x10000
+        return raw / 10.0
+
     # ---------- WRITE HELPERS ----------
 
     async def set_ch_setpoint(self, value_raw: int) -> bool:
@@ -183,6 +195,10 @@ class BoilerGateway:
 
     async def set_dhw_setpoint(self, value: int) -> bool:
         return await self.protocol.write_register(self.slave_id, REGISTER_DHW_SETPOINT, value)
+
+    async def set_max_modulation(self, value: int) -> bool:
+        """Set max modulation level (0-100%)."""
+        return await self.protocol.write_register(self.slave_id, REGISTER_MAX_MODULATION, value)
 
     async def set_circuit_enable_bit(self, bit: int, enabled: bool) -> bool:
         # read-modify-write 0x0039
