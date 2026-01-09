@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from custom_components.ectocontrol_modbus import async_setup_entry, async_unload_entry
 from custom_components.ectocontrol_modbus.const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
@@ -60,16 +60,25 @@ async def test_services_register_and_cleanup():
     hass = FakeHass()
     entry = DummyEntry("e1", {CONF_PORT: "/dev/ttyUSB0", CONF_SLAVE_ID: 1})
 
+    # Mock the device registry
     with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
         mock_get_dr.return_value = FakeDeviceRegistry()
-        ok = await async_setup_entry(hass, entry)
-        assert ok is True
-        # services should be registered
-        assert (DOMAIN, "reboot_adapter") in hass.services._registered
-        assert (DOMAIN, "reset_boiler_errors") in hass.services._registered
 
-        # unload entry should remove services because it's the last entry
-        ok2 = await async_unload_entry(hass, entry)
-        assert ok2 is True
-        assert (DOMAIN, "reboot_adapter") not in hass.services._registered
-        assert (DOMAIN, "reset_boiler_errors") not in hass.services._registered
+        # Mock the ModbusProtocol to avoid actually connecting to a serial port
+        with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as mock_protocol_class:
+            mock_protocol = MagicMock()
+            mock_protocol.connect = AsyncMock(return_value=True)
+            mock_protocol.disconnect = AsyncMock(return_value=True)
+            mock_protocol_class.return_value = mock_protocol
+
+            ok = await async_setup_entry(hass, entry)
+            assert ok is True
+            # services should be registered
+            assert (DOMAIN, "reboot_adapter") in hass.services._registered
+            assert (DOMAIN, "reset_boiler_errors") in hass.services._registered
+
+            # unload entry should remove services because it's the last entry
+            ok2 = await async_unload_entry(hass, entry)
+            assert ok2 is True
+            assert (DOMAIN, "reboot_adapter") not in hass.services._registered
+            assert (DOMAIN, "reset_boiler_errors") not in hass.services._registered

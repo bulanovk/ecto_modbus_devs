@@ -49,7 +49,7 @@ class FakeEntry:
 
 class FakeProtocol:
     async def connect(self):
-        pass
+        return True
 
     async def disconnect(self):
         pass

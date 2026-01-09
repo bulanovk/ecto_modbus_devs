@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 import asyncio
+import logging
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -14,6 +15,8 @@ from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
 from .modbus_protocol import ModbusProtocol
 from .boiler_gateway import BoilerGateway
 from .coordinator import BoilerDataUpdateCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -33,6 +36,9 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     slave = entry.data.get(CONF_SLAVE_ID)
 
     protocol = ModbusProtocol(port)
+    if not await protocol.connect():
+        _LOGGER.error("Failed to connect to Modbus device on %s", port)
+        return False
     gateway = BoilerGateway(protocol, slave_id=slave)
     coordinator = BoilerDataUpdateCoordinator(hass, gateway, name=f"{DOMAIN}_{slave}")
 

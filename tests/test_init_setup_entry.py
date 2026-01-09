@@ -66,8 +66,8 @@ class FakeGateway:
 
 
 class FakeProtocol:
-    def __init__(self):
-        self.port = "/dev/ttyUSB0"
+    def __init__(self, port):
+        self.port = port
         self.baudrate = 19200
         self.connected = False
 
@@ -117,7 +117,8 @@ async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
     hass = FakeHass()
     entry = FakeEntry("entry1", "/dev/ttyUSB0", 1)
 
-    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol):
         mock_get_dr.return_value = FakeDeviceRegistry()
         ok = await async_setup_entry(hass, entry)
         assert ok is True
@@ -146,7 +147,8 @@ async def test_async_unload_entry_with_multiple_entries(monkeypatch):
     entry1 = FakeEntry("entry1", "/dev/ttyUSB0", 1)
     entry2 = FakeEntry("entry2", "/dev/ttyUSB1", 2)
 
-    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol):
         mock_get_dr.return_value = FakeDeviceRegistry()
         await async_setup_entry(hass, entry1)
         await async_setup_entry(hass, entry2)
