@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
 from ..const import DOMAIN
 
@@ -29,8 +29,11 @@ class RebootAdapterButton(CoordinatorEntity, ButtonEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     async def async_press(self) -> None:
@@ -52,8 +55,11 @@ class ResetErrorsButton(CoordinatorEntity, ButtonEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     async def async_press(self) -> None:

@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.number import NumberEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
 from ..const import DOMAIN
 
@@ -41,8 +41,11 @@ class CHSetpointNumber(CoordinatorEntity, NumberEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     @property
@@ -74,8 +77,11 @@ class CHMinMaxNumber(CoordinatorEntity, NumberEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     @property
@@ -112,8 +118,11 @@ class DHWSetpointNumber(CoordinatorEntity, NumberEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     @property
@@ -143,8 +152,11 @@ class MaxModulationNumber(CoordinatorEntity, NumberEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     @property

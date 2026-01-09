@@ -5,7 +5,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
 from ..const import DOMAIN
 
@@ -43,8 +43,11 @@ class BoilerBinarySensor(CoordinatorEntity, BinarySensorEntity):
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
+        port = self.coordinator.gateway.protocol.port
+        slave_id = self.coordinator.gateway.slave_id
         return DeviceInfo(
-            identifiers={(DOMAIN, f"{self.coordinator.gateway.protocol.port}:{self.coordinator.gateway.slave_id}")}
+            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, f"{port}:{slave_id}")},
         )
 
     @property
