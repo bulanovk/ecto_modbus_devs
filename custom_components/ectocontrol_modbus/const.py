@@ -5,6 +5,9 @@ DOMAIN = "ectocontrol_modbus"
 CONF_PORT = "port"
 CONF_SLAVE_ID = "slave_id"
 CONF_NAME = "name"
+CONF_DEBUG_MODBUS = "debug_modbus"
+CONF_POLLING_INTERVAL = "polling_interval"
+CONF_RETRY_COUNT = "retry_count"
 
 # Modbus parameters
 MODBUS_BAUDRATE = 19200

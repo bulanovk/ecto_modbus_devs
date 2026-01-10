@@ -25,6 +25,7 @@ Thin async wrapper around `modbus-tk` RTU client:
 - **Error handling**: Returns `None` on timeout/Modbus error; never raises exceptions
 - **Concurrency**: Single async lock to serialize operations on half-duplex RS-485
 - **Execution model**: Wraps sync `modbus-tk` calls in `asyncio.run_in_executor()` to avoid blocking event loop
+- **Debug mode**: Optional `DebugSerial` wrapper logs all raw bytes sent/received (TX/RX hex dumps)
 
 ### Layer 2: Device Abstraction — `BoilerGateway`
 
@@ -58,7 +59,9 @@ def get_ch_temperature(self) -> Optional[float]:
   - Periodically reads all registers (0x0010..0x0026) in a single batch
   - Updates `gateway.cache` with results
   - Tracks update success/failure; marks device unavailable after 3 consecutive failures
-  - Polling interval: 15 seconds (configurable in `const.py`)
+  - Polling interval: 15 seconds (configurable via config flow: 5-300 seconds)
+  - Retry count: 3 attempts (configurable via config flow: 0-10 retries)
+  - Exponential backoff between retries (0.5s, 1s, 1.5s, etc.)
 
 - **Device Registry**:
   - Each config entry (slave_id on port) creates a separate device in Home Assistant
@@ -184,15 +187,29 @@ User interaction when setting up the integration:
 2. ConfigFlow Step 1: Select serial port (e.g., /dev/ttyUSB0, COM3)
 3. ConfigFlow Step 2: Enter Modbus slave ID (1–32)
 4. ConfigFlow Step 3: Provide friendly name (e.g., "Kitchen Boiler")
-5. ConfigFlow validates:
+5. ConfigFlow Step 4 (Optional): Configure advanced settings:
+   - Polling Interval: 5-300 seconds (default: 15)
+   - Retry Count: 0-10 retries (default: 3)
+   - Debug Modbus: Enable raw hex logging
+6. ConfigFlow validates:
    - Port exists
    - Slave ID unique for this port
    - Connection test: read register 0x0010 successfully
-6. Entry created; async_setup_entry called
-7. Device created in registry with default info
-8. Entities created and polling begins
-9. Device info updated after first successful poll with manufacturer/model/version
+7. Entry created; async_setup_entry called
+8. Device created in registry with default info
+9. Entities created and polling begins
+10. Device info updated after first successful poll with manufacturer/model/version
 ```
+
+### Configuration Data Stored
+
+Each config entry stores:
+- `port`: Serial port device path
+- `slave_id`: Modbus slave ID (1-32)
+- `name`: Friendly device name
+- `polling_interval`: Seconds between polls (5-300, default: 15)
+- `retry_count`: Number of retry attempts (0-10, default: 3)
+- `debug_modbus`: Enable raw Modbus logging (bool, default: False)
 
 ---
 
@@ -217,7 +234,12 @@ When `BoilerGateway` encounters invalid/unsupported data:
 When polling fails:
 - Raises `UpdateFailed` exception (caught by Home Assistant)
 - Coordinator tracks failure count; device unavailable after 3 consecutive failures
-- Automatic retry with exponential backoff
+- **Automatic retry with exponential backoff**:
+  - Configurable retry count (default: 3, range: 0-10)
+  - Backoff delay: 0.5s × retry attempt (0.5s, 1s, 1.5s, etc.)
+  - Logs each retry attempt with attempt number
+  - Logs recovery message when connection is restored
+  - `UpdateFailed` raised only after all retries exhausted
 
 ### Entity Availability
 
@@ -276,7 +298,8 @@ assert entity.native_value == 21.5
 
 ## Performance Considerations
 
-- **Polling interval**: 15 seconds (covers most user scenarios; configurable)
+- **Polling interval**: 15 seconds default, configurable 5-300 seconds via config flow
+- **Retry behavior**: Configurable retry count with exponential backoff for transient failures
 - **Batch reads**: All sensors read in single multi-register command (0x0010..0x0026 = 23 registers)
 - **Lock overhead**: Minimal; typical Modbus round-trip is 100–500 ms
 - **Memory**: Cache holds 23 × 2 bytes = 46 bytes per boiler instance

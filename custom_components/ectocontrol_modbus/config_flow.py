@@ -11,7 +11,18 @@ import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
 
-from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID, CONF_NAME, SERIAL_PORT_PATTERNS
+from .const import (
+    DOMAIN,
+    CONF_PORT,
+    CONF_SLAVE_ID,
+    CONF_NAME,
+    CONF_DEBUG_MODBUS,
+    CONF_POLLING_INTERVAL,
+    CONF_RETRY_COUNT,
+    SERIAL_PORT_PATTERNS,
+    DEFAULT_SCAN_INTERVAL,
+    MODBUS_RETRY_COUNT,
+)
 from .modbus_protocol import ModbusProtocol
 
 
@@ -45,6 +56,13 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     else str,
                     vol.Required(CONF_SLAVE_ID, default=1): int,
                     vol.Optional(CONF_NAME, default="Ectocontrol Boiler"): str,
+                    vol.Optional(
+                        CONF_POLLING_INTERVAL, default=DEFAULT_SCAN_INTERVAL.seconds
+                    ): vol.All(int, vol.Range(min=5, max=300)),
+                    vol.Optional(CONF_RETRY_COUNT, default=MODBUS_RETRY_COUNT): vol.All(
+                        int, vol.Range(min=0, max=10)
+                    ),
+                    vol.Optional(CONF_DEBUG_MODBUS, default=False): bool,
                 }
             )
             return self.async_show_form(step_id="user", data_schema=schema, errors={})
@@ -65,7 +83,11 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 return self.async_show_form(step_id="user", data_schema=vol.Schema({}), errors=self._errors)
 
         # attempt connection and basic read
-        protocol = ModbusProtocol(user_input[CONF_PORT])
+        debug_modbus = user_input.get(CONF_DEBUG_MODBUS, False)
+        polling_interval = user_input.get(CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds)
+        retry_count = user_input.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
+
+        protocol = ModbusProtocol(user_input[CONF_PORT], debug_modbus=debug_modbus)
         connected = await protocol.connect()
         if not connected:
             self._errors["base"] = "cannot_connect"
@@ -81,4 +103,14 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_show_form(step_id="user", data_schema=vol.Schema({}), errors=self._errors)
 
         title = user_input.get(CONF_NAME) or f"{user_input[CONF_PORT]}:{slave}"
-        return self.async_create_entry(title=title, data={CONF_PORT: user_input[CONF_PORT], CONF_SLAVE_ID: slave, CONF_NAME: user_input.get(CONF_NAME)})
+        return self.async_create_entry(
+            title=title,
+            data={
+                CONF_PORT: user_input[CONF_PORT],
+                CONF_SLAVE_ID: slave,
+                CONF_NAME: user_input.get(CONF_NAME),
+                CONF_DEBUG_MODBUS: debug_modbus,
+                CONF_POLLING_INTERVAL: polling_interval,
+                CONF_RETRY_COUNT: retry_count,
+            },
+        )

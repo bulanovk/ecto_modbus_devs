@@ -62,6 +62,10 @@ Expose gas boiler sensors, controls, and diagnostics via RS-485 Modbus RTU proto
 2. **Slave ID Input** - Range 1-32 (validates uniqueness per port)
 3. **Connection Test** - Read register 0x0010 to verify communication
 4. **Friendly Name** - User-provided device name
+5. **Advanced Settings (Optional)**:
+   - **Polling Interval**: 5-300 seconds (default: 15)
+   - **Retry Count**: 0-10 retries (default: 3)
+   - **Debug Modbus**: Enable raw hex logging for troubleshooting
 
 ### Error Handling Requirements
 | Layer | Behavior |
@@ -89,17 +93,25 @@ Each config entry (slave_id on a port) creates a separate device in Home Assista
 - **Entity Naming**: All entities use `_attr_has_entity_name = True` for automatic device-prefixed names
 
 ### Polling Requirements
-- **Default interval**: 15 seconds
+- **Default interval**: 15 seconds (configurable: 5-300 seconds via config flow)
 - **Batch read**: All sensors read in single multi-register command (0x0010..0x0026 = 23 registers)
 - **Timeout**: 2-3 seconds per Modbus operation
+- **Retry behavior**: Configurable retry count (0-10) with exponential backoff (0.5s × attempt_number)
 
 ### Remaining Implementation Tasks (from PR_CHECKLIST.md)
 - [ ] Climate entity implementation
 - [ ] Button entities for reboot/reset commands
 - [ ] Full switch/number entity coverage
 - [ ] Adapter-type and adapter-reboot-code sensors
-- [ ] Centralized retry policy with exponential backoff
-- [ ] Slave ID range narrowed to 1-32
+- [x] Centralized retry policy with exponential backoff (COMPLETED)
+- [x] Slave ID range narrowed to 1-32 (COMPLETED)
+
+### Completed Features (January 2025)
+- [x] Configurable polling interval (5-300 seconds)
+- [x] Configurable retry count (0-10 retries)
+- [x] Debug Modbus mode with raw hex logging
+- [x] Exponential backoff retry logic
+- [x] DebugSerial wrapper for TX/RX byte logging
 
 ---
 
@@ -211,11 +223,32 @@ The integration uses a 3-layer architecture with clear separation of concerns:
 ```
 
 **Layers:**
-1. **Hardware Communication** (`ModbusProtocol`) - Thin async wrapper around `modbus-tk` RTU client
+1. **Hardware Communication** (`ModbusProtocol`) - Thin async wrapper around `modbus-tk` RTU client, supports debug mode with `DebugSerial` wrapper
 2. **Device Abstraction** (`BoilerGateway`) - High-level boiler state adapter with register mapping and scaling
 3. **Home Assistant Integration** (Coordinator & Entities) - Entities that read from cache and write via gateway helpers
 
 Data flow: Entities → Gateway getters → Cache (populated by Coordinator) → Protocol → Serial Port
+
+## Configuration Constants
+
+The integration uses these configuration keys stored in each config entry:
+
+| Constant | Type | Range | Default | Purpose |
+|----------|------|-------|---------|---------|
+| `CONF_PORT` | string | — | — | Serial port device path |
+| `CONF_SLAVE_ID` | int | 1-32 | 1 | Modbus slave ID |
+| `CONF_NAME` | string | — | "Ectocontrol Boiler" | Friendly device name |
+| `CONF_POLLING_INTERVAL` | int | 5-300 | 15 | Seconds between polls |
+| `CONF_RETRY_COUNT` | int | 0-10 | 3 | Number of retry attempts |
+| `CONF_DEBUG_MODBUS` | bool | — | False | Enable raw hex logging |
+
+**Default values** (from `const.py`):
+```python
+DEFAULT_SCAN_INTERVAL = timedelta(seconds=15)
+MODBUS_RETRY_COUNT = 3
+MODBUS_BAUDRATE = 19200
+MODBUS_TIMEOUT = 2.0
+```
 
 ## Key Principles
 
@@ -604,6 +637,25 @@ await self.protocol.write_register(slave_id, 0x0039, newval)
 ```
 
 ## Debugging
+
+### Debug Modbus Mode
+
+When **Debug Modbus** is enabled (via config flow), the `DebugSerial` wrapper logs all raw bytes sent/received:
+
+```
+custom_components.ectocontrol_modbus.modbus_protocol.MODBUS_COM3: MODBUS_COM3 TX (8 bytes): 02 03 10 00 00 11 84 4a
+custom_components.ectocontrol_modbus.modbus_protocol.MODBUS_COM3: MODBUS_COM3 RX (5 bytes): 02 03 02 00 64 f1
+```
+
+**Diagnosis guide**:
+| Log Pattern | Diagnosis |
+|-------------|-----------|
+| TX but no RX | Wiring issue, wrong slave ID, adapter not powered |
+| No TX bytes | Serial port issue or incorrect port |
+| RX garbage data | Baud rate mismatch |
+| CRC errors | Electrical noise or cable interference |
+
+### Enable Debug Logging
 
 Enable debug logging in Home Assistant configuration.yaml:
 ```yaml

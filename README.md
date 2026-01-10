@@ -59,7 +59,11 @@
 3. Select serial port (e.g., `/dev/ttyUSB0`, `COM3`)
 4. Enter Modbus slave ID (usually `1`)
 5. Provide friendly name (e.g., "Kitchen Boiler")
-6. Click **Create** — integration tests connection and starts polling
+6. **Optional**: Configure advanced settings:
+   - **Polling Interval**: How often to poll the device (5-300 seconds, default: 15)
+   - **Retry Count**: Number of retries on transient failures (0-10, default: 3)
+   - **Debug Modbus**: Enable raw Modbus logging for troubleshooting
+7. Click **Create** — integration tests connection and starts polling
 
 **Full setup guide**: See [docs/USAGE.md](docs/USAGE.md)
 
@@ -215,11 +219,30 @@ See [HARDWARE_VALIDATION.md](HARDWARE_VALIDATION.md) for tested hardware combina
 - Verify serial port: `ls /dev/ttyUSB*` (Linux) or Device Manager (Windows)
 - Check slave ID (usually `1`) against adapter/boiler manual
 - Test with adapter software first to isolate HA vs. hardware issues
+- **Enable Debug Modbus**: Reconfigure integration and check "Debug Modbus" to see raw Modbus traffic in logs
 
 ### Entities Show "Unavailable"
 - Check integration reload: Settings → Devices & Services → Ectocontrol → Reload
-- Increase polling interval if boiler is slow
-- Enable debug logging: `logger.logs.custom_components.ectocontrol_modbus: debug`
+- Increase polling interval if boiler is slow (reconfigure integration)
+- Increase retry count for unreliable connections (reconfigure integration)
+- Enable debug logging:
+  ```yaml
+  logger:
+    logs:
+      custom_components.ectocontrol_modbus: debug
+  ```
+
+### Debug Mode
+When **Debug Modbus** is enabled, raw Modbus frames appear in logs:
+```
+MODBUS_COM3 TX (8 bytes): 02 03 10 00 00 11 84 4a
+MODBUS_COM3 RX (5 bytes): 02 03 02 00 64 f1
+```
+
+This helps diagnose:
+- **TX bytes but no RX**: Wiring/baud rate issue
+- **No TX bytes**: Port issue
+- **RX garbage**: Baud rate mismatch
 
 ### More Help
 See [docs/USAGE.md#troubleshooting](docs/USAGE.md#troubleshooting) or open an [issue](https://github.com/bulanovk/ecto_modbus_devs/issues).

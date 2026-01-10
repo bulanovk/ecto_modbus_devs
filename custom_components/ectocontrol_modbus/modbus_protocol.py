@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 import serial
 import modbus_tk.defines as cst
@@ -16,16 +16,112 @@ import modbus_tk.modbus_rtu as modbus_rtu
 _LOGGER = logging.getLogger(__name__)
 
 
+class DebugSerial:
+    """Wrapper around serial.Serial that logs all raw bytes sent/received.
+
+    This is useful for debugging Modbus communication issues.
+    """
+
+    def __init__(self, serial_instance: serial.Serial, name: str = "MODBUS"):
+        self._serial = serial_instance
+        self._name = name
+        self._logger = logging.getLogger(f"{__name__}.{name}")
+
+    def read(self, size: int = 1) -> bytes:
+        """Read and log bytes from serial port."""
+        data = self._serial.read(size)
+        if data:
+            self._logger.debug("%s RX (%d bytes): %s", self._name, len(data), data.hex(" "))
+        else:
+            self._logger.debug("%s RX: timeout (0 bytes)", self._name)
+        return data
+
+    def write(self, data: bytes) -> int:
+        """Write and log bytes to serial port."""
+        self._logger.debug("%s TX (%d bytes): %s", self._name, len(data), data.hex(" "))
+        return self._serial.write(data)
+
+    def flush(self) -> None:
+        """Flush serial port buffers."""
+        self._serial.flush()
+
+    def flushInput(self) -> None:
+        """Flush input buffer."""
+        self._serial.flushInput()
+
+    def flushOutput(self) -> None:
+        """Flush output buffer."""
+        self._serial.flushOutput()
+
+    def close(self) -> None:
+        """Close serial port."""
+        self._serial.close()
+
+    def isOpen(self) -> bool:
+        """Check if serial port is open."""
+        return self._serial.isOpen()
+
+    def in_waiting(self) -> int:
+        """Get number of bytes waiting in input buffer."""
+        return getattr(self._serial, "in_waiting", getattr(self._serial, "inWaiting", lambda: 0)())
+
+    @property
+    def port(self) -> str:
+        """Get port name."""
+        return self._serial.port
+
+    @property
+    def baudrate(self) -> int:
+        """Get baud rate."""
+        return self._serial.baudrate
+
+    @property
+    def bytesize(self) -> int:
+        """Get byte size."""
+        return self._serial.bytesize
+
+    @property
+    def parity(self) -> str:
+        """Get parity."""
+        return self._serial.parity
+
+    @property
+    def stopbits(self) -> int:
+        """Get stop bits."""
+        return self._serial.stopbits
+
+    @property
+    def timeout(self) -> float:
+        """Get timeout."""
+        return self._serial.timeout
+
+    @timeout.setter
+    def timeout(self, value: float) -> None:
+        """Set timeout."""
+        self._serial.timeout = value
+
+    def __getattr__(self, name: str):
+        """Forward any other attributes to wrapped serial instance."""
+        return getattr(self._serial, name)
+
+
 class ModbusProtocol:
     """Async wrapper for modbus-tk RTU master.
 
     Methods return `None` or `False` on error to simplify callers.
     """
 
-    def __init__(self, port: str, baudrate: int = 19200, timeout: float = 2.0):
+    def __init__(
+        self,
+        port: str,
+        baudrate: int = 19200,
+        timeout: float = 2.0,
+        debug_modbus: bool = False,
+    ):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
+        self.debug_modbus = debug_modbus
         self.client = None
         self._lock = asyncio.Lock()
 
@@ -38,6 +134,9 @@ class ModbusProtocol:
             stopbits=1,
             timeout=self.timeout,
         )
+        if self.debug_modbus:
+            ser = DebugSerial(ser, name=f"MODBUS_{self.port}")
+            _LOGGER.info("Modbus debug logging enabled for %s", self.port)
         master = modbus_rtu.RtuMaster(ser)
         master.set_timeout(self.timeout)
         master.open()

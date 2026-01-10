@@ -7,11 +7,21 @@ from __future__ import annotations
 from typing import Any
 import asyncio
 import logging
+from datetime import timedelta
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 
-from .const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
+from .const import (
+    DOMAIN,
+    CONF_PORT,
+    CONF_SLAVE_ID,
+    CONF_DEBUG_MODBUS,
+    CONF_POLLING_INTERVAL,
+    CONF_RETRY_COUNT,
+    DEFAULT_SCAN_INTERVAL,
+    MODBUS_RETRY_COUNT,
+)
 from .modbus_protocol import ModbusProtocol
 from .boiler_gateway import BoilerGateway
 from .coordinator import BoilerDataUpdateCoordinator
@@ -34,13 +44,22 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
 
     port = entry.data.get(CONF_PORT)
     slave = entry.data.get(CONF_SLAVE_ID)
+    debug_modbus = entry.data.get(CONF_DEBUG_MODBUS, False)
+    polling_interval = entry.data.get(CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds)
+    retry_count = entry.data.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
 
-    protocol = ModbusProtocol(port)
+    protocol = ModbusProtocol(port, debug_modbus=debug_modbus)
     if not await protocol.connect():
         _LOGGER.error("Failed to connect to Modbus device on %s", port)
         return False
     gateway = BoilerGateway(protocol, slave_id=slave)
-    coordinator = BoilerDataUpdateCoordinator(hass, gateway, name=f"{DOMAIN}_{slave}")
+    coordinator = BoilerDataUpdateCoordinator(
+        hass,
+        gateway,
+        name=f"{DOMAIN}_{slave}",
+        update_interval=timedelta(seconds=polling_interval),
+        retry_count=retry_count,
+    )
 
     hass.data[DOMAIN][entry.entry_id] = {
         "protocol": protocol,

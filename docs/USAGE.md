@@ -79,7 +79,33 @@ ls -la /dev/ttyAMA*
 - **Device Name**: Friendly name for your boiler (e.g., "Kitchen Boiler", "Main Heating")
 - This name appears in entity names and the UI
 
-### Step 5: Connection Test
+### Step 5: Advanced Settings (Optional)
+
+Configure optional advanced settings:
+
+| Setting | Range | Default | Description |
+|---------|-------|---------|-------------|
+| **Polling Interval** | 5-300 sec | 15 | How often to poll the device |
+| **Retry Count** | 0-10 | 3 | Number of retries on transient failures |
+| **Debug Modbus** | On/Off | Off | Enable raw Modbus logging for troubleshooting |
+
+**When to adjust these settings**:
+- **Increase polling interval** (e.g., 30-60 seconds) if:
+  - Boiler communication is slow
+  - You want to reduce serial port load
+  - You have multiple devices on the same RS-485 bus
+
+- **Increase retry count** (e.g., 5-10) if:
+  - Connection is unreliable
+  - RS-485 wiring is long or noisy
+  - You experience frequent "unavailable" states
+
+- **Enable Debug Modbus** when:
+  - Troubleshooting connection issues
+  - Diagnosing Modbus communication problems
+  - Verifying slave ID and baud rate settings
+
+### Step 6: Connection Test
 
 The integration automatically tests the connection by reading the adapter status register (0x0010). If successful, you'll see:
 
@@ -92,7 +118,7 @@ If it fails:
 - Verify Modbus adapter is powered on and connected
 - Review [Troubleshooting](#troubleshooting)
 
-### Step 6: Add Integration
+### Step 7: Add Integration
 
 Click **Create** to finalize. The integration will start polling your boiler immediately.
 
@@ -258,6 +284,7 @@ target:
 2. **Wrong baud rate or slave ID**
    - Check boiler/adapter manual (default: 19200, slave ID 1)
    - Try slave ID 1–5 if unsure
+   - **Enable Debug Modbus** and check logs for raw Modbus traffic
 
 3. **Adapter not powered**
    - Verify power LED on Modbus adapter is lit
@@ -269,6 +296,35 @@ target:
    sudo systemctl restart home-assistant
    ```
 
+### Debug Mode - Diagnosing Connection Issues
+
+**Symptom**: "Response length is invalid 0" or no device response
+
+**Solution**: Enable **Debug Modbus** in configuration
+
+1. Reconfigure the integration (Settings → Devices & Services → Ectocontrol → Configure)
+2. Check the **Debug Modbus** checkbox
+3. Save and reload the integration
+4. Check logs for raw Modbus traffic:
+   ```yaml
+   logger:
+     logs:
+       custom_components.ectocontrol_modbus: debug
+   ```
+
+**Interpreting Debug Logs**:
+```
+MODBUS_COM3 TX (8 bytes): 02 03 10 00 00 11 84 4a
+MODBUS_COM3 RX (5 bytes): 02 03 02 00 64 f1
+```
+
+| Log Pattern | Diagnosis |
+|-------------|-----------|
+| TX but no RX | Wiring issue, wrong slave ID, or adapter not responding |
+| No TX bytes | Serial port issue or incorrect port |
+| RX garbage data | Baud rate mismatch |
+| CRC errors | Electrical noise or cable interference |
+
 ### Entities Show "Unavailable"
 
 **Symptom**: All sensors show "unavailable" or "unknown"
@@ -276,16 +332,19 @@ target:
 **Causes**:
 1. **Coordinator polling failed**
    - Check `home-assistant.log` for errors
-   - Increase polling interval in `const.py` (if boiler is slow)
+   - Increase polling interval (reconfigure integration → set to 30-60 seconds)
+   - Increase retry count (reconfigure integration → set to 5-10)
    - Restart integration: Settings → Devices & Services → Ectocontrol → Reload
 
 2. **Modbus timeout**
    - Verify RS-485 cable quality (reduce cable length if possible)
    - Check for electrical noise near RS-485 lines
+   - Increase retry count for unreliable connections
 
 3. **Device unavailability**
    - After 3 consecutive polling failures, entities become unavailable
    - Manually reload: Settings → Devices & Services → Ectocontrol → ⋮ → Reload
+   - Enable Debug Modbus to diagnose communication issues
 
 ### "Modbus error" in Logs
 
@@ -363,7 +422,7 @@ A: Yes! Use the `Boiler` climate entity or adjust `CH Setpoint` number entity.
 A: Yes! Add multiple Ectocontrol devices via separate serial ports or by configuring different slave IDs on the same port.
 
 **Q: What's the polling interval?**
-A: Default is 15 seconds. Adjust in `const.py` → `DEFAULT_SCAN_INTERVAL` if needed.
+A: Default is 15 seconds, configurable via integration setup (5-300 seconds). Reconfigure the integration to change it.
 
 **Q: Can I use this on Raspberry Pi?**
 A: Yes! Use a USB RS-485 converter connected to any USB port, or use the onboard UART with a hardware converter.
