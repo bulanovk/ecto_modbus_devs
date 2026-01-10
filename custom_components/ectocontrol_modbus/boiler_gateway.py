@@ -67,26 +67,26 @@ class BoilerGateway:
         raw = self._get_reg(REGISTER_PRESSURE)
         if raw is None:
             return None
-        msb = (raw >> 8) & 0xFF
-        if msb == 0xFF:
+        lsb = raw & 0xFF
+        if lsb == 0xFF:
             return None
-        return msb / 10.0
+        return lsb / 10.0
 
     def get_flow_rate(self) -> Optional[float]:
         raw = self._get_reg(REGISTER_FLOW)
         if raw is None:
             return None
-        msb = (raw >> 8) & 0xFF
-        if msb == 0xFF:
+        lsb = raw & 0xFF
+        if lsb == 0xFF:
             return None
-        return msb / 10.0
+        return lsb / 10.0
 
     def get_modulation_level(self) -> Optional[int]:
         raw = self._get_reg(REGISTER_MODULATION)
         if raw is None:
             return None
-        msb = (raw >> 8) & 0xFF
-        return None if msb == 0xFF else msb
+        lsb = raw & 0xFF
+        return None if lsb == 0xFF else lsb
 
     def get_burner_on(self) -> Optional[bool]:
         raw = self._get_reg(REGISTER_STATES)

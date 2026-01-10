@@ -13,9 +13,9 @@ def test_gateway_scaling_and_invalid_values():
     gw.cache = {
         0x0018: 291,        # CH temp = 29.1°C
         0x0019: 450,        # DHW = 45.0°C
-        0x001A: (12 << 8),  # pressure MSB=12 -> 1.2 bar
-        0x001B: (0 << 8),   # flow MSB=0 -> 0.0 L/min
-        0x001C: (75 << 8),  # modulation 75%
+        0x001A: 12,  # pressure LSB=12 -> 1.2 bar
+        0x001B: 0,   # flow LSB=0 -> 0.0 L/min
+        0x001C: 75,  # modulation 75%
         0x001D: 0x0003,     # bits 0 and 1 set
         0x001E: 0x0000,
         0x0020: (0x00 << 8),

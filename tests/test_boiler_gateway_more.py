@@ -22,16 +22,16 @@ async def test_boiler_gateway_edge_cases_and_writes():
     proto = FakeProto()
     gw = BoilerGateway(proto, slave_id=5)
 
-    # pressure msb 0xFF -> None
-    gw.cache = {0x001A: (0xFF << 8)}
+    # pressure lsb 0xFF -> None
+    gw.cache = {0x001A: 0xFF}
     assert gw.get_pressure() is None
 
-    # flow msb 0xFF -> None
-    gw.cache = {0x001B: (0xFF << 8)}
+    # flow lsb 0xFF -> None
+    gw.cache = {0x001B: 0xFF}
     assert gw.get_flow_rate() is None
 
-    # modulation msb 0xFF -> None
-    gw.cache = {0x001C: (0xFF << 8)}
+    # modulation lsb 0xFF -> None
+    gw.cache = {0x001C: 0xFF}
     assert gw.get_modulation_level() is None
 
     # states bits: ensure bits parsed correctly
