@@ -19,9 +19,11 @@ from .const import (
     CONF_DEBUG_MODBUS,
     CONF_POLLING_INTERVAL,
     CONF_RETRY_COUNT,
+    CONF_READ_TIMEOUT,
     SERIAL_PORT_PATTERNS,
     DEFAULT_SCAN_INTERVAL,
     MODBUS_RETRY_COUNT,
+    MODBUS_READ_TIMEOUT,
 )
 from .modbus_protocol import ModbusProtocol
 
@@ -37,6 +39,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors: dict[str, str] = {}
         self._ports: list[str] = []
 
+    @staticmethod
     def async_get_options_flow(config_entry):
         """Create options flow."""
         return EctocontrolOptionsFlow(config_entry)
@@ -74,6 +77,10 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_RETRY_COUNT,
                 default=defaults.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
             ): vol.Coerce(int),
+            vol.Optional(
+                CONF_READ_TIMEOUT,
+                default=defaults.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
+            ): vol.All(float, vol.Range(min=0.1, max=60.0)),
             vol.Optional(
                 CONF_DEBUG_MODBUS, default=defaults.get(CONF_DEBUG_MODBUS, False)
             ): bool,
@@ -114,6 +121,14 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except (ValueError, KeyError):
             self._errors[CONF_RETRY_COUNT] = "invalid_number"
 
+        # Validate read timeout
+        try:
+            read_timeout = float(user_input.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT))
+            if not (0.1 <= read_timeout <= 60.0):
+                self._errors[CONF_READ_TIMEOUT] = "invalid_range"
+        except (ValueError, KeyError):
+            self._errors[CONF_READ_TIMEOUT] = "invalid_number"
+
         if self._errors:
             return self.async_show_form(
                 step_id="user",
@@ -141,6 +156,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds
             )
             retry_count = user_input.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
+            read_timeout = user_input.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT)
 
             protocol = ModbusProtocol(user_input[CONF_PORT], debug_modbus=debug_modbus)
             connected = await protocol.connect()
@@ -154,7 +170,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             try:
-                regs = await protocol.read_registers(slave, 0x0010, 1, timeout=3.0)
+                regs = await protocol.read_registers(slave, 0x0010, 1, timeout=read_timeout)
             finally:
                 await protocol.disconnect()
 
@@ -184,12 +200,17 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 CONF_DEBUG_MODBUS: debug_modbus,
                 CONF_POLLING_INTERVAL: polling_interval,
                 CONF_RETRY_COUNT: retry_count,
+                CONF_READ_TIMEOUT: read_timeout,
             },
         )
 
 
 class EctocontrolOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for Ectocontrol Modbus Adapter v2."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        """Initialize options flow."""
+        self.config_entry = config_entry
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Handle options flow initial step."""
@@ -208,6 +229,10 @@ class EctocontrolOptionsFlow(config_entries.OptionsFlow):
                     CONF_RETRY_COUNT,
                     default=options.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
                 ): vol.All(int, vol.Range(min=0, max=10)),
+                vol.Optional(
+                    CONF_READ_TIMEOUT,
+                    default=options.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
+                ): vol.All(float, vol.Range(min=0.1, max=60.0)),
                 vol.Optional(
                     CONF_DEBUG_MODBUS,
                     default=options.get(CONF_DEBUG_MODBUS, False),

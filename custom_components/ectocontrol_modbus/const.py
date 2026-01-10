@@ -8,11 +8,13 @@ CONF_NAME = "name"
 CONF_DEBUG_MODBUS = "debug_modbus"
 CONF_POLLING_INTERVAL = "polling_interval"
 CONF_RETRY_COUNT = "retry_count"
+CONF_READ_TIMEOUT = "read_timeout"
 
 # Modbus parameters
 MODBUS_BAUDRATE = 19200
 MODBUS_TIMEOUT = 2.0
 MODBUS_RETRY_COUNT = 3
+MODBUS_READ_TIMEOUT = 3.0
 
 # Serial port patterns to include (USB adapters, RS-485 converters, hardware serial)
 # Linux: ttyUSB* (USB-Serial), ttyACM* (USB CDC), ttyAMA* (Raspberry Pi UART)

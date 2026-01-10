@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DEFAULT_SCAN_INTERVAL
+from .const import DEFAULT_SCAN_INTERVAL, MODBUS_READ_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -23,11 +23,13 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
         name: str,
         update_interval: timedelta = DEFAULT_SCAN_INTERVAL,
         retry_count: int = 3,
+        read_timeout: float = MODBUS_READ_TIMEOUT,
         config_entry: Optional[Any] = None,
     ):
         self.gateway = gateway
         self.name = name
         self.retry_count = retry_count
+        self.read_timeout = read_timeout
         super().__init__(
             hass,
             _LOGGER,
@@ -49,7 +51,7 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
             try:
                 # Start address 0x0010, count 23 (0x0010..0x0026)
                 regs = await self.gateway.protocol.read_registers(
-                    self.gateway.slave_id, 0x0010, 23, timeout=3.0
+                    self.gateway.slave_id, 0x0010, 23, timeout=self.read_timeout
                 )
                 if regs is None:
                     raise UpdateFailed("No response from device")

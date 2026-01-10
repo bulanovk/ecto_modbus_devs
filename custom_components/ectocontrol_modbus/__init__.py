@@ -19,8 +19,10 @@ from .const import (
     CONF_DEBUG_MODBUS,
     CONF_POLLING_INTERVAL,
     CONF_RETRY_COUNT,
+    CONF_READ_TIMEOUT,
     DEFAULT_SCAN_INTERVAL,
     MODBUS_RETRY_COUNT,
+    MODBUS_READ_TIMEOUT,
 )
 from .modbus_protocol import ModbusProtocol
 from .boiler_gateway import BoilerGateway
@@ -47,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     debug_modbus = entry.data.get(CONF_DEBUG_MODBUS, False)
     polling_interval = entry.data.get(CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds)
     retry_count = entry.data.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
+    read_timeout = entry.data.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT)
 
     protocol = ModbusProtocol(port, debug_modbus=debug_modbus)
     if not await protocol.connect():
@@ -59,6 +62,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         name=f"{DOMAIN}_{slave}",
         update_interval=timedelta(seconds=polling_interval),
         retry_count=retry_count,
+        read_timeout=read_timeout,
         config_entry=entry,
     )
 
