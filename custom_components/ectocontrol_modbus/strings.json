@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Ectocontrol Modbus Adapter",
+        "description": "Enter your Modbus adapter settings below.",
+        "data": {
+          "port": "Serial Port",
+          "slave_id": "Slave ID",
+          "name": "Friendly Name (Optional)",
+          "polling_interval": "Polling Interval (seconds)",
+          "retry_count": "Retry Count",
+          "debug_modbus": "Debug Modbus"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the Modbus adapter. Check the port and slave ID.",
+      "invalid_slave": "Slave ID must be between 1 and 32.",
+      "already_configured": "This port and slave ID combination is already configured."
+    }
+  },
+  "title": "Ectocontrol Modbus Adapter v2"
+}
