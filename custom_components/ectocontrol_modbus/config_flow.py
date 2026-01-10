@@ -82,11 +82,15 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step where user provides port and slave id."""
         # List all available serial ports and filter by supported patterns
-        all_ports = await asyncio.to_thread(serial.tools.list_ports.comports)
-        self._ports = [
-            p.device for p in all_ports
-            if any(fnmatch(p.device, pattern) for pattern in SERIAL_PORT_PATTERNS)
-        ]
+        try:
+            all_ports = await asyncio.to_thread(serial.tools.list_ports.comports)
+            self._ports = [
+                p.device for p in all_ports
+                if any(fnmatch(p.device, pattern) for pattern in SERIAL_PORT_PATTERNS)
+            ]
+        except Exception as e:
+            _LOGGER.error("Failed to list serial ports: %s", e)
+            self._ports = []
 
         if user_input is None:
             return self.async_show_form(
@@ -120,29 +124,38 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
         # Attempt connection and basic read
-        debug_modbus = user_input.get(CONF_DEBUG_MODBUS, False)
-        polling_interval = user_input.get(
-            CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds
-        )
-        retry_count = user_input.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
-
-        protocol = ModbusProtocol(user_input[CONF_PORT], debug_modbus=debug_modbus)
-        connected = await protocol.connect()
-        if not connected:
-            self._errors["base"] = "cannot_connect"
-            await protocol.disconnect()
-            return self.async_show_form(
-                step_id="user",
-                data_schema=self._build_schema(user_input),
-                errors=self._errors,
-            )
-
         try:
-            regs = await protocol.read_registers(slave, 0x0010, 1, timeout=3.0)
-        finally:
-            await protocol.disconnect()
+            debug_modbus = user_input.get(CONF_DEBUG_MODBUS, False)
+            polling_interval = user_input.get(
+                CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds
+            )
+            retry_count = user_input.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
 
-        if regs is None:
+            protocol = ModbusProtocol(user_input[CONF_PORT], debug_modbus=debug_modbus)
+            connected = await protocol.connect()
+            if not connected:
+                self._errors["base"] = "cannot_connect"
+                await protocol.disconnect()
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=self._build_schema(user_input),
+                    errors=self._errors,
+                )
+
+            try:
+                regs = await protocol.read_registers(slave, 0x0010, 1, timeout=3.0)
+            finally:
+                await protocol.disconnect()
+
+            if regs is None:
+                self._errors["base"] = "cannot_connect"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=self._build_schema(user_input),
+                    errors=self._errors,
+                )
+        except Exception as e:
+            _LOGGER.error("Connection test failed: %s", e)
             self._errors["base"] = "cannot_connect"
             return self.async_show_form(
                 step_id="user",

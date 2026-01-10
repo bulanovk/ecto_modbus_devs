@@ -11,6 +11,11 @@
           "polling_interval": "Polling Interval (seconds)",
           "retry_count": "Retry Count",
           "debug_modbus": "Debug Modbus"
+        },
+        "data_description": {
+          "slave_id": "Modbus slave ID (1-32)",
+          "polling_interval": "Seconds between polls (5-300)",
+          "retry_count": "Number of retry attempts (0-10)"
         }
       }
     },

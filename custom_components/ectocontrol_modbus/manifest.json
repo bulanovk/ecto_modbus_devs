@@ -13,7 +13,7 @@
   "license": "MIT",
   "documentation": "https://github.com/bulanovk/ecto_modbus_devs/blob/main/docs/USAGE.md",
   "config_flow": true,
-  "homeassistant": "2025.12.0",
+  "homeassistant": "2025.1.0",
   "platforms": ["sensor", "switch", "number", "binary_sensor", "climate", "button"],
   "iot_class": "local_polling",
   "quality_scale": "silver"
