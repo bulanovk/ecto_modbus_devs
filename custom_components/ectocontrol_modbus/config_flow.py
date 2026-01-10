@@ -64,7 +64,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             **port_schema,
             vol.Required(
                 CONF_SLAVE_ID, default=defaults.get(CONF_SLAVE_ID, 1)
-            ): vol.All(int, vol.Range(min=1, max=32)),
+            ): vol.Coerce(int),
             vol.Optional(
                 CONF_NAME, default=defaults.get(CONF_NAME, "Ectocontrol Boiler")
             ): str,
@@ -75,7 +75,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_RETRY_COUNT,
                 default=defaults.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
-            ): vol.All(int, vol.Range(min=0, max=10)),
+            ): vol.Coerce(int),
             vol.Optional(
                 CONF_DEBUG_MODBUS, default=defaults.get(CONF_DEBUG_MODBUS, False)
             ): bool,
@@ -104,9 +104,19 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         try:
             slave = int(user_input[CONF_SLAVE_ID])
             if not (1 <= slave <= 32):
-                raise ValueError()
+                self._errors[CONF_SLAVE_ID] = "invalid_range"
         except (ValueError, KeyError):
-            self._errors[CONF_SLAVE_ID] = "invalid_slave"
+            self._errors[CONF_SLAVE_ID] = "invalid_number"
+
+        # Validate retry count
+        try:
+            retry_count = int(user_input.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT))
+            if retry_count < 0 or retry_count > 10:
+                self._errors[CONF_RETRY_COUNT] = "invalid_range"
+        except (ValueError, KeyError):
+            self._errors[CONF_RETRY_COUNT] = "invalid_number"
+
+        if self._errors:
             return self.async_show_form(
                 step_id="user",
                 data_schema=self._build_schema(user_input),
