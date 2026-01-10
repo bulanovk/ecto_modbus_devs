@@ -191,10 +191,6 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class EctocontrolOptionsFlow(config_entries.OptionsFlow):
     """Handle options flow for Ectocontrol Modbus Adapter v2."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Handle options flow initial step."""
         if user_input is not None:
