@@ -10,6 +10,7 @@ import serial.tools.list_ports
 import voluptuous as vol
 
 from homeassistant import config_entries
+from homeassistant.helpers import selector
 
 from .const import (
     DOMAIN,
@@ -76,7 +77,11 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_RETRY_COUNT,
                 default=defaults.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
-            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0, max=10, step=1, mode="box"
+                )
+            ),
             vol.Optional(
                 CONF_READ_TIMEOUT,
                 default=defaults.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
@@ -228,7 +233,11 @@ class EctocontrolOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_RETRY_COUNT,
                     default=options.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
-                ): vol.All(int, vol.Range(min=0, max=10)),
+                ): selector.NumberSelector(
+                    selector.NumberSelectorConfig(
+                        min=0, max=10, step=1, mode="box"
+                    )
+                ),
                 vol.Optional(
                     CONF_READ_TIMEOUT,
                     default=options.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
