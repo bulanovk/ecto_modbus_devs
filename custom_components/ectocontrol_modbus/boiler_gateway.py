@@ -210,6 +210,20 @@ class BoilerGateway:
             newv = current & ~(1 << bit)
         return await self.protocol.write_register(self.slave_id, REGISTER_CIRCUIT_ENABLE, newv)
 
+    def get_heating_enable_switch(self) -> Optional[bool]:
+        """Read heating enable switch state from circuit enable register (0x0039 bit 0)."""
+        raw = self._get_reg(REGISTER_CIRCUIT_ENABLE)
+        if raw is None:
+            return None
+        return bool(raw & 0x01)
+
+    def get_dhw_enable_switch(self) -> Optional[bool]:
+        """Read DHW enable switch state from circuit enable register (0x0039 bit 1)."""
+        raw = self._get_reg(REGISTER_CIRCUIT_ENABLE)
+        if raw is None:
+            return None
+        return bool((raw >> 1) & 0x01)
+
     async def reboot_adapter(self) -> bool:
         # write command 2 to 0x0080
         return await self.protocol.write_register(self.slave_id, REGISTER_COMMAND, 2)

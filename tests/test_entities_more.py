@@ -44,6 +44,12 @@ class DummyGateway:
     def get_dhw_enabled(self):
         return False
 
+    def get_heating_enable_switch(self):
+        return True
+
+    def get_dhw_enable_switch(self):
+        return False
+
 
 def test_sensor_entity_attributes() -> None:
     """Test sensor entity attributes and unique_id."""
@@ -99,19 +105,19 @@ def test_switch_with_state_getter() -> None:
     gw = DummyGateway()
     coord = DummyCoordinator(gw)
 
-    # Heating Enable switch (bit 0) should use get_heating_enabled()
+    # Heating Enable switch (bit 0) should use get_heating_enable_switch()
     heating_switch = CircuitSwitch(
         coord, bit=0, name="Heating Enable",
-        state_getter=lambda g: g.get_heating_enabled()
+        state_getter=lambda g: g.get_heating_enable_switch()
     )
-    assert heating_switch.is_on is True  # get_heating_enabled returns True
+    assert heating_switch.is_on is True  # get_heating_enable_switch returns True
 
-    # DHW Enable switch (bit 1) should use get_dhw_enabled()
+    # DHW Enable switch (bit 1) should use get_dhw_enable_switch()
     dhw_switch = CircuitSwitch(
         coord, bit=1, name="DHW Enable",
-        state_getter=lambda g: g.get_dhw_enabled()
+        state_getter=lambda g: g.get_dhw_enable_switch()
     )
-    assert dhw_switch.is_on is False  # get_dhw_enabled returns False
+    assert dhw_switch.is_on is False  # get_dhw_enable_switch returns False
 
     # When state_getter returns None, is_on should return None
     def getter_returning_none(g):

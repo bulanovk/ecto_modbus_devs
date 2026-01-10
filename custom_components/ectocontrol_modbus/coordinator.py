@@ -68,8 +68,8 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> Dict[int, int]:
         """Fetch data from Modbus and update gateway cache.
 
-        Reads registers 0x0010..0x0026 in a single batch and stores them in gateway.cache
-        as a mapping {address: value}.
+        Reads registers 0x0010..0x0026 in a single batch and also reads
+        0x0039 (circuit enable) for switch state tracking.
 
         Implements configurable retry logic for transient failures.
         """
@@ -87,6 +87,13 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
                 base = 0x0010
                 for i, v in enumerate(regs):
                     data[base + i] = v
+
+                # Also read circuit enable register (0x0039) for switch states
+                circuit_enable = await self.gateway.protocol.read_registers(
+                    self.gateway.slave_id, 0x0039, 1, timeout=self.read_timeout
+                )
+                if circuit_enable:
+                    data[0x0039] = circuit_enable[0]
 
                 # Update gateway cache
                 self.gateway.cache = data

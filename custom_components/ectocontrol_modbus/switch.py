@@ -14,11 +14,13 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
     data = hass.data[DOMAIN][entry.entry_id]
     coordinator = data["coordinator"]
     # expose heating enable (bit 0) and DHW enable (bit 1)
+    # NOTE: Switches read/write from circuit enable register (0x0039)
+    # Binary sensors read from states register (0x001D) for actual boiler status
     async_add_entities([
         CircuitSwitch(coordinator, bit=0, name="Heating Enable",
-                      state_getter=lambda gw: gw.get_heating_enabled()),
+                      state_getter=lambda gw: gw.get_heating_enable_switch()),
         CircuitSwitch(coordinator, bit=1, name="DHW Enable",
-                      state_getter=lambda gw: gw.get_dhw_enabled()),
+                      state_getter=lambda gw: gw.get_dhw_enable_switch()),
     ])
 
 
