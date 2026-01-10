@@ -10,7 +10,7 @@ The **Ectocontrol Modbus Adapter v2** integration allows you to monitor and cont
 
 ### Hardware
 
-- **Home Assistant** (2024.1 or later)
+- **Home Assistant** (2025.12.5 or later)
 - **Ectocontrol Modbus Adapter v2** connected to your boiler via RS-485
 - **Serial connection** to Home Assistant:
   - USB to RS-485 converter (e.g., `CH340` or `FTDI FT232`) connected to Home Assistant host
