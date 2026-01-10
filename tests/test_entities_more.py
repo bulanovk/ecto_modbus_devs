@@ -92,3 +92,32 @@ async def test_switch_turn_on() -> None:
     switch = CircuitSwitch(coord, bit=1)
     await switch.async_turn_on()
     assert gw.last_bit_call == (1, True)
+
+
+def test_switch_with_state_getter() -> None:
+    """Test switch uses state_getter lambda instead of reading cache directly."""
+    gw = DummyGateway()
+    coord = DummyCoordinator(gw)
+
+    # Heating Enable switch (bit 0) should use get_heating_enabled()
+    heating_switch = CircuitSwitch(
+        coord, bit=0, name="Heating Enable",
+        state_getter=lambda g: g.get_heating_enabled()
+    )
+    assert heating_switch.is_on is True  # get_heating_enabled returns True
+
+    # DHW Enable switch (bit 1) should use get_dhw_enabled()
+    dhw_switch = CircuitSwitch(
+        coord, bit=1, name="DHW Enable",
+        state_getter=lambda g: g.get_dhw_enabled()
+    )
+    assert dhw_switch.is_on is False  # get_dhw_enabled returns False
+
+    # When state_getter returns None, is_on should return None
+    def getter_returning_none(g):
+        return None
+
+    none_switch = CircuitSwitch(
+        coord, bit=0, state_getter=getter_returning_none
+    )
+    assert none_switch.is_on is None

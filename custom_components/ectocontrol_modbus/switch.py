@@ -15,18 +15,22 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddE
     coordinator = data["coordinator"]
     # expose heating enable (bit 0) and DHW enable (bit 1)
     async_add_entities([
-        CircuitSwitch(coordinator, bit=0, name="Heating Enable"),
-        CircuitSwitch(coordinator, bit=1, name="DHW Enable"),
+        CircuitSwitch(coordinator, bit=0, name="Heating Enable",
+                      state_getter=lambda gw: gw.get_heating_enabled()),
+        CircuitSwitch(coordinator, bit=1, name="DHW Enable",
+                      state_getter=lambda gw: gw.get_dhw_enabled()),
     ])
 
 
 class CircuitSwitch(CoordinatorEntity, SwitchEntity):
     _attr_has_entity_name = True
 
-    def __init__(self, coordinator, bit: int = 0, name: str | None = None):
+    def __init__(self, coordinator, bit: int = 0, name: str | None = None,
+                 state_getter: callable | None = None):
         super().__init__(coordinator)
         self._bit = bit
         self._attr_name = name or f"Circuit {bit}"
+        self._state_getter = state_getter
 
     @property
     def unique_id(self) -> str:
@@ -44,9 +48,9 @@ class CircuitSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def is_on(self) -> bool | None:
-        # states may not reflect circuit enable; read from cache/register via gateway
-        # this entity uses get_burner_on as a placeholder if no dedicated getter
-        # use constant from const if available; fallback to literal
+        if self._state_getter:
+            return self._state_getter(self.coordinator.gateway)
+        # fallback: read from cache directly
         states = self.coordinator.gateway.cache.get(0x001D)
         if states is None:
             return None
