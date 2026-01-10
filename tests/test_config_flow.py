@@ -79,7 +79,7 @@ async def test_config_flow_invalid_slave(monkeypatch):
     result = await flow.async_step_user(user_input)
 
     assert result["type"] == "form"
-    assert "invalid_slave" in result.get("errors", {}).values()
+    assert "invalid_range" in result.get("errors", {}).values()
 
 
 @pytest.mark.asyncio
