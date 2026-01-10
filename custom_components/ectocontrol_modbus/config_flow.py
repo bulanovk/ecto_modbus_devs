@@ -76,7 +76,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_RETRY_COUNT,
                 default=defaults.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
-            ): vol.Coerce(int),
+            ): vol.All(vol.Coerce(int), vol.Range(min=0, max=10)),
             vol.Optional(
                 CONF_READ_TIMEOUT,
                 default=defaults.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
