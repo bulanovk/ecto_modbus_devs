@@ -80,7 +80,7 @@ class FakeRtuMaster:
 
 
 @pytest.mark.asyncio
-async def test_full_setup_and_coordinator_poll(tmp_path):
+async def test_full_setup_and_coordinator_poll(tmp_path) -> None:
     """Run a full setup and coordinator poll with mocked RtuMaster."""
     # patch serial.Serial and modbus_tk.modbus_rtu.RtuMaster used in ModbusProtocol._connect_sync
     with patch("serial.Serial") as MockSerial, \

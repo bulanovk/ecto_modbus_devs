@@ -363,6 +363,24 @@ def mock_serial_ports(monkeypatch):
     )
 ```
 
+### Why We Use Custom Fakes Instead of MockConfigEntry
+
+This integration uses custom fake classes (`DummyEntry`, `DummyHass`, `FakeGateway`) rather than Home Assistant's `MockConfigEntry` and `hass` fixture. This is an intentional design decision:
+
+**Benefits:**
+- **Isolation from HA changes**: Custom fakes don't break when Home Assistant updates its test utilities
+- **Simplicity**: Direct control over mock behavior without complex fixture setup
+- **Maintainability**: Easier to understand and modify
+- **Focus**: Tests focus on integration logic, not HA framework details
+
+**Trade-offs:**
+- Less "realistic" HA environment
+- Must manually maintain fake class interfaces
+
+**Verdict**: For this Modbus integration with minimal HA coupling, custom fakes provide the best test coverage with the least maintenance burden.
+
+
+
 ---
 
 ## Unit Testing

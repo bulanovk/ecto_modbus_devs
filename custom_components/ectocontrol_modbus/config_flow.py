@@ -92,6 +92,134 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         }
         return vol.Schema(schema_dict)
 
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None):
+        """Handle reconfiguration of the integration."""
+        errors: dict[str, str] = {}
+
+        # Get current entry from context
+        entry = self._get_reconfigure_entry()
+        current_data = entry.data
+
+        # List all available serial ports and filter by supported patterns
+        try:
+            all_ports = await asyncio.to_thread(serial.tools.list_ports.comports)
+            self._ports = [
+                p.device for p in all_ports
+                if any(fnmatch(p.device, pattern) for pattern in SERIAL_PORT_PATTERNS)
+            ]
+        except Exception as e:
+            _LOGGER.error("Failed to list serial ports: %s", e)
+            self._ports = []
+
+        if user_input is not None:
+            # Validate slave_id
+            try:
+                slave = int(user_input[CONF_SLAVE_ID])
+                if not (1 <= slave <= 32):
+                    errors[CONF_SLAVE_ID] = "invalid_range"
+            except (ValueError, KeyError):
+                errors[CONF_SLAVE_ID] = "invalid_number"
+
+            if errors:
+                return self.async_show_form(
+                    step_id="reconfigure",
+                    data_schema=self._build_reconfigure_schema(current_data),
+                    errors=errors,
+                )
+
+            # Check for duplicates (exclude current entry)
+            for existing_entry in self.hass.config_entries.async_entries(DOMAIN):
+                if (existing_entry.entry_id != entry.entry_id and
+                    existing_entry.data.get(CONF_PORT) == user_input[CONF_PORT] and
+                    existing_entry.data.get(CONF_SLAVE_ID) == slave):
+                    errors[CONF_SLAVE_ID] = "already_configured"
+                    return self.async_show_form(
+                        step_id="reconfigure",
+                        data_schema=self._build_reconfigure_schema(current_data),
+                        errors=errors,
+                    )
+
+            # Test connection with new settings
+            try:
+                protocol = ModbusProtocol(
+                    user_input[CONF_PORT],
+                    debug_modbus=current_data.get(CONF_DEBUG_MODBUS, False)
+                )
+                connected = await protocol.connect()
+                if not connected:
+                    errors["base"] = "cannot_connect"
+                    await protocol.disconnect()
+                    return self.async_show_form(
+                        step_id="reconfigure",
+                        data_schema=self._build_reconfigure_schema(current_data),
+                        errors=errors,
+                    )
+
+                try:
+                    regs = await protocol.read_registers(
+                        slave, 0x0010, 1,
+                        timeout=current_data.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT)
+                    )
+                finally:
+                    await protocol.disconnect()
+
+                if regs is None:
+                    errors["base"] = "cannot_connect"
+                    return self.async_show_form(
+                        step_id="reconfigure",
+                        data_schema=self._build_reconfigure_schema(current_data),
+                        errors=errors,
+                    )
+            except Exception as e:
+                _LOGGER.error("Connection test failed: %s", e)
+                errors["base"] = "cannot_connect"
+                return self.async_show_form(
+                    step_id="reconfigure",
+                    data_schema=self._build_reconfigure_schema(current_data),
+                    errors=errors,
+                )
+
+            # Success: update entry and reload
+            return self.async_update_reload_and_abort(
+                entry,
+                data_updates={
+                    CONF_PORT: user_input[CONF_PORT],
+                    CONF_SLAVE_ID: slave,
+                    CONF_NAME: user_input.get(CONF_NAME),
+                },
+            )
+
+        # Show form with current values as defaults
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self._build_reconfigure_schema(current_data),
+            errors=errors,
+        )
+
+    def _build_reconfigure_schema(self, current_data: dict[str, Any]) -> vol.Schema:
+        """Build schema for reconfigure flow (core settings only)."""
+        # Build the port schema field conditionally based on available ports
+        if self._ports:
+            port_schema = {
+                vol.Required(
+                    CONF_PORT, default=current_data.get(CONF_PORT, self._ports[0])
+                ): vol.In(self._ports)
+            }
+        else:
+            port_schema = {
+                vol.Required(CONF_PORT, default=current_data.get(CONF_PORT, "")): str
+            }
+
+        return vol.Schema({
+            **port_schema,
+            vol.Required(
+                CONF_SLAVE_ID, default=current_data.get(CONF_SLAVE_ID, 1)
+            ): vol.Coerce(int),
+            vol.Optional(
+                CONF_NAME, default=current_data.get(CONF_NAME, "Ectocontrol Boiler")
+            ): str,
+        })
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Handle the initial step where user provides port and slave id."""
         # List all available serial ports and filter by supported patterns

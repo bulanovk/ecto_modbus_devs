@@ -75,7 +75,7 @@ class WriteFailRtuMaster:
 
 
 @pytest.mark.asyncio
-async def test_read_timeout_returns_none():
+async def test_read_timeout_returns_none() -> None:
     with patch("serial.Serial"), patch("modbus_tk.modbus_rtu.RtuMaster", new=TimeoutRtuMaster):
         from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
 
@@ -91,7 +91,7 @@ async def test_read_timeout_returns_none():
 
 
 @pytest.mark.asyncio
-async def test_modbus_error_read_returns_none_and_coordinator_update_failed():
+async def test_modbus_error_read_returns_none_and_coordinator_update_failed() -> None:
     with patch("serial.Serial"), patch("modbus_tk.modbus_rtu.RtuMaster", new=ModbusErrorRtuMaster):
         from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
         from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
@@ -118,7 +118,7 @@ async def test_modbus_error_read_returns_none_and_coordinator_update_failed():
 
 
 @pytest.mark.asyncio
-async def test_write_failure_handled():
+async def test_write_failure_handled() -> None:
     with patch("serial.Serial"), patch("modbus_tk.modbus_rtu.RtuMaster", new=WriteFailRtuMaster):
         from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
         from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway

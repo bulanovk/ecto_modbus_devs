@@ -7,17 +7,24 @@ from custom_components.ectocontrol_modbus.switch import CircuitSwitch
 
 
 class DummyCoordinator:
+    """Dummy coordinator for testing."""
+
     def __init__(self, gateway):
         self.gateway = gateway
+        self.last_update_success = True  # Add for availability tests
 
     async def async_request_refresh(self):
         pass
 
 
 class DummyGateway:
+    """Dummy gateway for testing."""
+
     def __init__(self):
         self.slave_id = 1
         self.cache = {}
+        # Add protocol mock for device_info tests
+        self.protocol = type('obj', (object,), {'port': 'mock_port'})
 
     def get_pressure(self):
         return None
@@ -38,7 +45,7 @@ class DummyGateway:
         return False
 
 
-def test_sensor_entity_attributes():
+def test_sensor_entity_attributes() -> None:
     """Test sensor entity attributes and unique_id."""
     gw = DummyGateway()
     coord = DummyCoordinator(gw)
@@ -49,7 +56,7 @@ def test_sensor_entity_attributes():
     assert "get_ch_temperature" in sensor.unique_id
 
 
-def test_binary_sensor_entity_attributes():
+def test_binary_sensor_entity_attributes() -> None:
     """Test binary sensor entity attributes and unique_id."""
     gw = DummyGateway()
     coord = DummyCoordinator(gw)
@@ -59,7 +66,7 @@ def test_binary_sensor_entity_attributes():
     assert "get_burner_on" in binary.unique_id
 
 
-def test_switch_entity_cache_none():
+def test_switch_entity_cache_none() -> None:
     """Test switch when cache register is None."""
     gw = DummyGateway()
     coord = DummyCoordinator(gw)
@@ -70,7 +77,7 @@ def test_switch_entity_cache_none():
 
 
 @pytest.mark.asyncio
-async def test_switch_turn_on():
+async def test_switch_turn_on() -> None:
     """Test switch turn_on calls set_circuit_enable_bit."""
     gw = DummyGateway()
     gw.last_bit_call = None

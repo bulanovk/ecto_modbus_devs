@@ -1,3 +1,5 @@
+"""Tests for Ectocontrol Modbus entities."""
+
 import pytest
 
 from custom_components.ectocontrol_modbus.sensor import BoilerSensor
@@ -7,11 +9,15 @@ from custom_components.ectocontrol_modbus.switch import CircuitSwitch
 
 
 class FakeGateway:
+    """Fake gateway for testing."""
+
     def __init__(self):
         self.slave_id = 1
         self.cache = {0x001D: 0}
         self.last_set_raw = None
         self.circuit_written = None
+        # Add protocol mock for device_info tests
+        self.protocol = type('obj', (object,), {'port': 'mock_port'})
 
     def get_ch_temperature(self):
         return 21.5
@@ -50,14 +56,18 @@ class FakeGateway:
 
 
 class DummyCoordinator:
+    """Dummy coordinator for testing."""
+
     def __init__(self, gateway):
         self.gateway = gateway
+        self.last_update_success = True  # Add for availability tests
 
     async def async_request_refresh(self):
         self.refreshed = True
 
 
-def test_boiler_sensor_native_values():
+def test_boiler_sensor_native_values() -> None:
+    """Test sensor native_value property returns correct data."""
     gw = FakeGateway()
     coord = DummyCoordinator(gw)
 
@@ -69,7 +79,8 @@ def test_boiler_sensor_native_values():
     assert s2.native_value == 0x1234
 
 
-def test_binary_sensor_is_on():
+def test_binary_sensor_is_on() -> None:
+    """Test binary sensor is_on property."""
     gw = FakeGateway()
     gw.get_burner_on = lambda: True
     coord = DummyCoordinator(gw)
@@ -79,7 +90,8 @@ def test_binary_sensor_is_on():
 
 
 @pytest.mark.asyncio
-async def test_number_set_and_refresh():
+async def test_number_set_and_refresh() -> None:
+    """Test number entity set value triggers write and refresh."""
     gw = FakeGateway()
     coord = DummyCoordinator(gw)
 
@@ -92,7 +104,8 @@ async def test_number_set_and_refresh():
 
 
 @pytest.mark.asyncio
-async def test_switch_turn_on_off_and_state():
+async def test_switch_turn_on_off_and_state() -> None:
+    """Test switch turn on/off actions and state."""
     gw = FakeGateway()
     # set bit 0 in states
     gw.cache[0x001D] = 1
@@ -106,3 +119,37 @@ async def test_switch_turn_on_off_and_state():
 
     await sw.async_turn_on()
     assert gw.circuit_written == (0, True)
+
+
+def test_boiler_sensor_device_info() -> None:
+    """Test entity has device_info for proper device association."""
+    import importlib
+    const = importlib.import_module("custom_components.ectocontrol_modbus.const")
+
+    gw = FakeGateway()
+    coord = DummyCoordinator(gw)
+
+    s = BoilerSensor(coord, "get_ch_temperature", "CH Temp", "°C")
+    device_info = s.device_info
+
+    assert device_info is not None
+    assert device_info["identifiers"] == {(const.DOMAIN, f"mock_port:1")}
+
+
+def test_boiler_sensor_has_entity_name() -> None:
+    """Test entity has _attr_has_entity_name set to True."""
+    gw = FakeGateway()
+    coord = DummyCoordinator(gw)
+
+    s = BoilerSensor(coord, "get_ch_temperature", "CH Temp", "°C")
+    assert s._attr_has_entity_name is True
+
+
+def test_boiler_sensor_unavailable_when_coordinator_fails() -> None:
+    """Test entity shows unavailable when coordinator last_update_success is False."""
+    gw = FakeGateway()
+    coord = DummyCoordinator(gw)
+    coord.last_update_success = False
+
+    s = BoilerSensor(coord, "get_ch_temperature", "CH Temp", "°C")
+    assert s.available is False

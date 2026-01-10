@@ -17,6 +17,15 @@
           "polling_interval": "Seconds between polls (5-300)",
           "retry_count": "Number of retry attempts (0-10)"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Ectocontrol Modbus Adapter",
+        "description": "Update the core connection settings for your Modbus adapter.",
+        "data": {
+          "port": "Serial Port",
+          "slave_id": "Slave ID",
+          "name": "Friendly Name (Optional)"
+        }
       }
     },
     "error": {

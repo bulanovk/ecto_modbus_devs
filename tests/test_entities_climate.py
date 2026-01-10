@@ -1,13 +1,18 @@
+"""Tests for the BoilerClimate entity."""
 import pytest
 
 from custom_components.ectocontrol_modbus.climate import BoilerClimate
 
 
 class FakeGateway:
+    """Fake gateway for testing."""
+
     def __init__(self):
         self.slave_id = 1
         self.last_set_raw = None
         self.circuit_written = None
+        # Add protocol mock for device_info tests
+        self.protocol = type('obj', (object,), {'port': 'mock_port'})
 
     def get_ch_temperature(self):
         return 19.5
@@ -31,14 +36,18 @@ class FakeGateway:
 
 
 class DummyCoordinator:
+    """Dummy coordinator for testing."""
+
     def __init__(self, gateway):
         self.gateway = gateway
+        self.last_update_success = True  # Add for availability tests
 
     async def async_request_refresh(self):
         self.refreshed = True
 
 
-def test_climate_properties():
+def test_climate_properties() -> None:
+    """Test climate entity properties."""
     gw = FakeGateway()
     coord = DummyCoordinator(gw)
 
@@ -50,7 +59,8 @@ def test_climate_properties():
 
 
 @pytest.mark.asyncio
-async def test_climate_set_temperature_and_mode():
+async def test_climate_set_temperature_and_mode() -> None:
+    """Test climate set_temperature and set_hvac_mode actions."""
     gw = FakeGateway()
     coord = DummyCoordinator(gw)
 
