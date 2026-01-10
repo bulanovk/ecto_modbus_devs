@@ -59,6 +59,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         name=f"{DOMAIN}_{slave}",
         update_interval=timedelta(seconds=polling_interval),
         retry_count=retry_count,
+        config_entry=entry,
     )
 
     hass.data[DOMAIN][entry.entry_id] = {

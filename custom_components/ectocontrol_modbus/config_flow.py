@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from fnmatch import fnmatch
 from typing import Any
 
@@ -24,6 +25,8 @@ from .const import (
     MODBUS_RETRY_COUNT,
 )
 from .modbus_protocol import ModbusProtocol
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):

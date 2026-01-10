@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import timedelta
-from typing import Dict
+from typing import Any, Dict, Optional
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -23,6 +23,7 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
         name: str,
         update_interval: timedelta = DEFAULT_SCAN_INTERVAL,
         retry_count: int = 3,
+        config_entry: Optional[Any] = None,
     ):
         self.gateway = gateway
         self.name = name
@@ -32,6 +33,7 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER,
             name=name,
             update_interval=update_interval,
+            config_entry=config_entry,
         )
 
     async def _async_update_data(self) -> Dict[int, int]:

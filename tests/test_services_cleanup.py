@@ -57,19 +57,28 @@ class DummyEntry:
 
 @pytest.mark.asyncio
 async def test_services_register_and_cleanup():
+    import asyncio
     hass = FakeHass()
     entry = DummyEntry("e1", {CONF_PORT: "/dev/ttyUSB0", CONF_SLAVE_ID: 1})
+
+    # Create a fake coordinator
+    fake_coordinator = MagicMock()
+    fake_coordinator.async_config_entry_first_refresh = AsyncMock()
+    fake_coordinator.async_request_refresh = AsyncMock()
 
     # Mock the device registry
     with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
         mock_get_dr.return_value = FakeDeviceRegistry()
 
         # Mock the ModbusProtocol to avoid actually connecting to a serial port
-        with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as mock_protocol_class:
+        with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as mock_protocol_class, \
+             patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
+             patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
             mock_protocol = MagicMock()
             mock_protocol.connect = AsyncMock(return_value=True)
             mock_protocol.disconnect = AsyncMock(return_value=True)
             mock_protocol_class.return_value = mock_protocol
+            mock_frame_hass.hass = hass
 
             ok = await async_setup_entry(hass, entry)
             assert ok is True

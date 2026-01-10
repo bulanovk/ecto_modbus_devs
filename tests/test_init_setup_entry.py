@@ -1,4 +1,5 @@
 """Tests for __init__.py setup/unload with actual entry data and service handlers."""
+import asyncio
 import pytest
 
 from custom_components.ectocontrol_modbus import async_setup_entry, async_unload_entry
@@ -66,10 +67,11 @@ class FakeGateway:
 
 
 class FakeProtocol:
-    def __init__(self, port):
+    def __init__(self, port, debug_modbus: bool = False):
         self.port = port
         self.baudrate = 19200
         self.connected = False
+        self.debug_modbus = debug_modbus
 
     async def connect(self):
         self.connected = True
@@ -100,26 +102,27 @@ class FakeEntry:
 @pytest.mark.asyncio
 async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
     """Test async_setup_entry creates gateway/protocol/coordinator and registers services."""
-    from unittest.mock import patch
-    from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
-    from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
-    from custom_components.ectocontrol_modbus.coordinator import BoilerDataUpdateCoordinator
-
-    # mock coordinator to avoid actual polling
-    class MockCoordinator(BoilerDataUpdateCoordinator):
-        async def async_config_entry_first_refresh(self):
-            pass
-
-    monkeypatch.setattr(
-        "custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", MockCoordinator
-    )
+    from unittest.mock import patch, MagicMock
 
     hass = FakeHass()
     entry = FakeEntry("entry1", "/dev/ttyUSB0", 1)
 
+    # Create a fake coordinator that avoids the frame helper issue
+    fake_coordinator = MagicMock()
+    fake_coordinator.async_config_entry_first_refresh = MagicMock(return_value=asyncio.sleep(0))
+    fake_coordinator.async_request_refresh = MagicMock(return_value=asyncio.sleep(0))
+
     with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
-         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol):
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol), \
+         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
+         patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
         mock_get_dr.return_value = FakeDeviceRegistry()
+        # Set up frame helper to avoid RuntimeError
+        from homeassistant.helpers import frame
+        mock_hass_obj = MagicMock()
+        mock_hass_obj.hass = hass
+        mock_frame_hass.hass = hass
+
         ok = await async_setup_entry(hass, entry)
         assert ok is True
         assert "entry1" in hass.data[DOMAIN]
@@ -130,26 +133,25 @@ async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
 @pytest.mark.asyncio
 async def test_async_unload_entry_with_multiple_entries(monkeypatch):
     """Test that services are NOT removed if other entries remain."""
-    from unittest.mock import patch
-    from custom_components.ectocontrol_modbus.modbus_protocol import ModbusProtocol
-    from custom_components.ectocontrol_modbus.boiler_gateway import BoilerGateway
-    from custom_components.ectocontrol_modbus.coordinator import BoilerDataUpdateCoordinator
-
-    class MockCoordinator(BoilerDataUpdateCoordinator):
-        async def async_config_entry_first_refresh(self):
-            pass
-
-    monkeypatch.setattr(
-        "custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", MockCoordinator
-    )
+    from unittest.mock import patch, MagicMock
 
     hass = FakeHass()
     entry1 = FakeEntry("entry1", "/dev/ttyUSB0", 1)
     entry2 = FakeEntry("entry2", "/dev/ttyUSB1", 2)
 
+    # Create a fake coordinator that avoids the frame helper issue
+    fake_coordinator = MagicMock()
+    fake_coordinator.async_config_entry_first_refresh = MagicMock(return_value=asyncio.sleep(0))
+    fake_coordinator.async_request_refresh = MagicMock(return_value=asyncio.sleep(0))
+
     with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
-         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol):
+         patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol), \
+         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
+         patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
         mock_get_dr.return_value = FakeDeviceRegistry()
+        # Set up frame helper to avoid RuntimeError
+        mock_frame_hass.hass = hass
+
         await async_setup_entry(hass, entry1)
         await async_setup_entry(hass, entry2)
 

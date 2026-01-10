@@ -14,6 +14,18 @@ from unittest.mock import MagicMock, patch
 from custom_components.ectocontrol_modbus.const import DOMAIN, CONF_PORT, CONF_SLAVE_ID
 
 
+def _fake_run_callback_threadsafe(loop, callback):
+    """Fake run_callback_threadsafe that just runs the callback."""
+    from concurrent.futures import Future
+    future = Future()
+    try:
+        callback()
+        future.set_result(None)
+    except Exception as e:
+        future.set_exception(e)
+    return future
+
+
 class FakeDeviceEntry:
     def __init__(self):
         self.id = "test_device_id"
@@ -73,7 +85,9 @@ async def test_full_setup_and_coordinator_poll(tmp_path):
     # patch serial.Serial and modbus_tk.modbus_rtu.RtuMaster used in ModbusProtocol._connect_sync
     with patch("serial.Serial") as MockSerial, \
          patch("modbus_tk.modbus_rtu.RtuMaster", new=FakeRtuMaster), \
-         patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr:
+         patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+         patch("homeassistant.helpers.frame._hass") as mock_frame_hass, \
+         patch("homeassistant.helpers.frame.run_callback_threadsafe", _fake_run_callback_threadsafe):
 
         mock_get_dr.return_value = FakeDeviceRegistry()
 
@@ -90,14 +104,22 @@ async def test_full_setup_and_coordinator_poll(tmp_path):
                 self.services = MagicMock()
                 self.config = MagicMock()
                 self.config.config_dir = "/tmp/config"
+                self.loop_thread_id = None
+                self.loop = asyncio.get_event_loop()
 
         hass = FakeHass()
+        mock_frame_hass.hass = hass
 
         # create a fake config entry object
         class FakeEntry:
             def __init__(self, entry_id="entry1", port="/dev/ttyUSB0", slave=1):
                 self.entry_id = entry_id
                 self.data = {CONF_PORT: port, CONF_SLAVE_ID: slave}
+                self._unload_callbacks = []
+
+            async def async_on_unload(self, callback):
+                """Register an unload callback."""
+                self._unload_callbacks.append(callback)
 
         entry = FakeEntry()
 
