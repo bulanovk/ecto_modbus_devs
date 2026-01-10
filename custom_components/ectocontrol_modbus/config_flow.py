@@ -80,7 +80,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Optional(
                 CONF_READ_TIMEOUT,
                 default=defaults.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
-            ): vol.All(float, vol.Range(min=0.1, max=60.0)),
+            ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=60.0)),
             vol.Optional(
                 CONF_DEBUG_MODBUS, default=defaults.get(CONF_DEBUG_MODBUS, False)
             ): bool,
@@ -232,7 +232,7 @@ class EctocontrolOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_READ_TIMEOUT,
                     default=options.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT),
-                ): vol.All(float, vol.Range(min=0.1, max=60.0)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.1, max=60.0)),
                 vol.Optional(
                     CONF_DEBUG_MODBUS,
                     default=options.get(CONF_DEBUG_MODBUS, False),
