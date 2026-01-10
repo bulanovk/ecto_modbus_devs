@@ -12,6 +12,33 @@ from .const import DEFAULT_SCAN_INTERVAL, MODBUS_READ_TIMEOUT
 
 _LOGGER = logging.getLogger(__name__)
 
+# Register name mapping for debug output
+_REGISTER_NAMES = {
+    0x0010: "STATUS",
+    0x0011: "VERSION",
+    0x0012: "UPTIME_HIGH",
+    0x0013: "UPTIME_LOW",
+    0x0014: "RESERVED_14",
+    0x0015: "RESERVED_15",
+    0x0016: "RESERVED_16",
+    0x0017: "RESERVED_17",
+    0x0018: "CH_TEMP",
+    0x0019: "DHW_TEMP",
+    0x001A: "PRESSURE",
+    0x001B: "FLOW",
+    0x001C: "MODULATION",
+    0x001D: "STATES",
+    0x001E: "MAIN_ERROR",
+    0x001F: "ADD_ERROR",
+    0x0020: "OUTDOOR_TEMP",
+    0x0021: "MFG_CODE",
+    0x0022: "MODEL_CODE",
+    0x0023: "OT_ERROR",
+    0x0024: "RESERVED_24",
+    0x0025: "RESERVED_25",
+    0x0026: "CH_SETPOINT_ACTIVE",
+}
+
 
 class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
     """Coordinator that polls Modbus registers and updates the `BoilerGateway` cache."""
@@ -63,6 +90,15 @@ class BoilerDataUpdateCoordinator(DataUpdateCoordinator):
 
                 # Update gateway cache
                 self.gateway.cache = data
+
+                # Debug log with register names
+                _LOGGER.debug(
+                    "Received data: %s",
+                    ", ".join(
+                        f"{_REGISTER_NAMES.get(addr, f'0x{addr:04X}')}=0x{val:04X}({val})"
+                        for addr, val in data.items()
+                    )
+                )
 
                 # Log retry recovery
                 if attempt > 0:
