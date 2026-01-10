@@ -10,7 +10,6 @@ import serial.tools.list_ports
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.core import callback
 
 from .const import (
     DOMAIN,
@@ -38,8 +37,6 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._errors: dict[str, str] = {}
         self._ports: list[str] = []
 
-    @staticmethod
-    @callback
     def async_get_options_flow(config_entry):
         """Create options flow."""
         return EctocontrolOptionsFlow(config_entry)
