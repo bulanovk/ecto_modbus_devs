@@ -79,7 +79,7 @@ class EctocontrolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 default=defaults.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
-                    min=0, max=10, step=1, mode="box"
+                    min=0, max=10, step=1, mode="box", type_of="integer"
                 )
             ),
             vol.Optional(
@@ -363,7 +363,7 @@ class EctocontrolOptionsFlow(config_entries.OptionsFlow):
                     default=options.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT),
                 ): selector.NumberSelector(
                     selector.NumberSelectorConfig(
-                        min=0, max=10, step=1, mode="box"
+                        min=0, max=10, step=1, mode="box", type_of="integer"
                     )
                 ),
                 vol.Optional(

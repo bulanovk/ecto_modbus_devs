@@ -48,7 +48,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     slave = entry.data.get(CONF_SLAVE_ID)
     debug_modbus = entry.data.get(CONF_DEBUG_MODBUS, False)
     polling_interval = entry.data.get(CONF_POLLING_INTERVAL, DEFAULT_SCAN_INTERVAL.seconds)
-    retry_count = entry.data.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT)
+    retry_count = int(entry.data.get(CONF_RETRY_COUNT, MODBUS_RETRY_COUNT))
     read_timeout = entry.data.get(CONF_READ_TIMEOUT, MODBUS_READ_TIMEOUT)
 
     protocol = ModbusProtocol(port, debug_modbus=debug_modbus)
