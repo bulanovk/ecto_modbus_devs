@@ -30,8 +30,9 @@ class DummyHass:
 
 
 class FakeProtocolOK:
-    def __init__(self, port):
+    def __init__(self, port, debug_modbus=False):
         self.port = port
+        self.debug_modbus = debug_modbus
 
     async def connect(self):
         return True
