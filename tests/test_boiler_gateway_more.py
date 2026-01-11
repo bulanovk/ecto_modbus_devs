@@ -66,12 +66,12 @@ async def test_boiler_gateway_edge_cases_and_writes():
     assert ok is True
     assert proto.writes[-1] == (5, 0x0031, 123)
 
-    # test set_circuit_enable_bit read-modify-write
-    proto.reads = {0x0039: 0}
+    # test set_circuit_enable_bit uses cached value for read-modify-write
+    gw.cache = {0x0039: 0x0001}  # bit 0 already set
     ok2 = await gw.set_circuit_enable_bit(2, True)
     assert ok2 is True
-    # verify last write set bit 2
-    assert proto.writes[-1][2] & (1 << 2)
+    # verify last write set bit 2 while preserving bit 0
+    assert proto.writes[-1][2] == 0x0005  # bit 0 + bit 2 = 0x0001 | 0x0004 = 0x0005
 
     # reboot and reset commands
     ok3 = await gw.reboot_adapter()

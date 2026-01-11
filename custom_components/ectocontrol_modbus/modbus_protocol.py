@@ -253,6 +253,9 @@ class ModbusProtocol:
             _LOGGER.warning("Modbus client not connected")
             return False
 
+        _LOGGER.debug("write_register called: slave_id=%d addr=0x%04X value=0x%04X",
+                     slave_id, addr, value)
+
         async with self._lock:
             loop = asyncio.get_event_loop()
             try:

@@ -203,12 +203,11 @@ class BoilerGateway:
     async def set_circuit_enable_bit(self, bit: int, enabled: bool) -> bool:
         """Set a specific bit in the circuit enable register (0x0039).
 
-        Reads the current value and updates only the specified bit to avoid
-        disturbing other bits in the register.
+        Uses the cached value (updated by coordinator) and updates only the
+        specified bit to avoid disturbing other bits in the register.
         """
-        # Read current value to preserve other bits
-        regs = await self.protocol.read_registers(self.slave_id, REGISTER_CIRCUIT_ENABLE, 1)
-        current = regs[0] if regs else 0
+        # Use cached value from coordinator's last poll
+        current = self.cache.get(REGISTER_CIRCUIT_ENABLE, 0)
 
         if enabled:
             newv = current | (1 << bit)
