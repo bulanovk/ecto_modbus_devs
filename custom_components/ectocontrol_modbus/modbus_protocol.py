@@ -248,4 +248,26 @@ class ModbusProtocol:
                 return False
 
     async def write_register(self, slave_id: int, addr: int, value: int) -> bool:
-        return await self.write_registers(slave_id, addr, [value])
+        """Write a single holding register (function 0x06)."""
+        if not self.client:
+            _LOGGER.warning("Modbus client not connected")
+            return False
+
+        async with self._lock:
+            loop = asyncio.get_event_loop()
+            try:
+                await loop.run_in_executor(
+                    None,
+                    self.client.execute,
+                    slave_id,
+                    cst.WRITE_SINGLE_REGISTER,
+                    addr,
+                    value,
+                )
+                return True
+            except modbus.ModbusError as exc:
+                _LOGGER.error("Modbus error write %s@%s: %s", addr, slave_id, exc)
+                return False
+            except Exception as exc:
+                _LOGGER.error("Unexpected error writing register: %s", exc)
+                return False
