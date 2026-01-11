@@ -55,6 +55,8 @@ async def test_write_register_uses_single_register_function():
     # Verify execute was called with WRITE_SINGLE_REGISTER (0x06)
     mock_master.execute.assert_called_once()
     args = mock_master.execute.call_args[0]
+    assert args[0] == 1  # slave_id
     assert args[1] == cst.WRITE_SINGLE_REGISTER  # function code 0x06
     assert args[2] == 0x0031  # register address
-    assert args[3] == 220  # value
+    assert args[3] == 0  # quantity_of_x (unused for WRITE_SINGLE_REGISTER)
+    assert args[4] == 220  # output_value - the actual value to write
