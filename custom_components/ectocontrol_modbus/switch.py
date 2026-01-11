@@ -1,6 +1,9 @@
 """Switch platform for Ectocontrol Modbus Adapter v2."""
 from __future__ import annotations
 
+import asyncio
+import logging
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.switch import SwitchEntity
@@ -8,6 +11,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities: AddEntitiesCallback):
@@ -60,9 +65,19 @@ class CircuitSwitch(CoordinatorEntity, SwitchEntity):
         return bool(lsb & (1 << self._bit))
 
     async def async_turn_on(self, **kwargs) -> None:
-        await self.coordinator.gateway.set_circuit_enable_bit(self._bit, True)
+        success = await self.coordinator.gateway.set_circuit_enable_bit(self._bit, True)
+        if not success:
+            _LOGGER.error("Failed to turn on circuit bit %d", self._bit)
+            return
+        # Small delay to allow device to process the write
+        await asyncio.sleep(0.1)
         await self.coordinator.async_request_refresh()
 
     async def async_turn_off(self, **kwargs) -> None:
-        await self.coordinator.gateway.set_circuit_enable_bit(self._bit, False)
+        success = await self.coordinator.gateway.set_circuit_enable_bit(self._bit, False)
+        if not success:
+            _LOGGER.error("Failed to turn off circuit bit %d", self._bit)
+            return
+        # Small delay to allow device to process the write
+        await asyncio.sleep(0.1)
         await self.coordinator.async_request_refresh()

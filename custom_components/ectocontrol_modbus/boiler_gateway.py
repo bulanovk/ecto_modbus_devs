@@ -201,14 +201,30 @@ class BoilerGateway:
         return await self.protocol.write_register(self.slave_id, REGISTER_MAX_MODULATION, value)
 
     async def set_circuit_enable_bit(self, bit: int, enabled: bool) -> bool:
-        # read-modify-write 0x0039
+        """Set a specific bit in the circuit enable register (0x0039).
+
+        Reads the current value and updates only the specified bit to avoid
+        disturbing other bits in the register.
+        """
+        # Read current value to preserve other bits
         regs = await self.protocol.read_registers(self.slave_id, REGISTER_CIRCUIT_ENABLE, 1)
         current = regs[0] if regs else 0
+
         if enabled:
             newv = current | (1 << bit)
         else:
             newv = current & ~(1 << bit)
-        return await self.protocol.write_register(self.slave_id, REGISTER_CIRCUIT_ENABLE, newv)
+
+        _LOGGER.debug("Circuit enable write: bit=%d enabled=%s current=0x%04X new=0x%04X",
+                     bit, enabled, current, newv)
+
+        result = await self.protocol.write_register(self.slave_id, REGISTER_CIRCUIT_ENABLE, newv)
+        if not result:
+            _LOGGER.error("Failed to write circuit enable register 0x0039, value: 0x%04X", newv)
+        else:
+            # Update cache immediately to provide optimistic update
+            self.cache[REGISTER_CIRCUIT_ENABLE] = newv
+        return result
 
     def get_heating_enable_switch(self) -> Optional[bool]:
         """Read heating enable switch state from circuit enable register (0x0039 bit 0)."""
