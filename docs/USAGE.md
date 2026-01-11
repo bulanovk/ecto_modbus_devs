@@ -371,6 +371,39 @@ MODBUS_COM3 RX (5 bytes): 02 03 02 00 64 f1
 2. Check automation trigger threshold is correct
 3. Reload automation: Developer Tools → YAML → Reload Automations
 
+### Switch Turns Off Immediately
+
+**Symptom**: Heating Enable or DHW Enable switch turns off immediately after being toggled
+
+**Causes**:
+1. **Write operation failed**
+   - Check logs for error messages: "Failed to write circuit enable register"
+   - Enable Debug Modbus to verify Modbus communication
+   - Verify serial connection is stable
+
+2. **Device rejection**
+   - Some boilers may not accept circuit enable commands under certain conditions
+   - Check if there are active boiler errors preventing the change
+   - Verify the boiler is in a state that allows circuit enable/disable
+
+3. **Read-modify-write race condition**
+   - The integration reads the current register, modifies the bit, and writes back
+   - If another process modifies the register between read and write, the change may not persist
+   - Check logs for "Circuit enable write" debug messages to see what values are being written
+
+**Solution**: Enable debug logging and check the logs:
+```yaml
+logger:
+  logs:
+    custom_components.ectocontrol_modbus.switch: debug
+    custom_components.ectocontrol_modbus.boiler_gateway: debug
+```
+
+Look for log entries like:
+```
+Circuit enable write: bit=0 enabled=True current=0x0000 new=0x0001
+```
+
 ---
 
 ## Maintenance

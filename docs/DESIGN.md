@@ -72,6 +72,7 @@ def get_ch_temperature(self) -> Optional[float]:
 - **Entities** (Sensor, Switch, Number, BinarySensor, Climate, Button):
   - Read-only access to gateway cache via gateway getters
   - Write operations call gateway async helpers then refresh coordinator
+  - **Optimistic cache update**: After successful write, switch entities update cache immediately for responsive UI
   - All entities extend `CoordinatorEntity` for automatic availability tracking
   - All entities have unique ID in format `ectocontrol_{slave_id}_{feature}`
   - All entities use `_attr_has_entity_name = True` for automatic device-prefixed names
@@ -246,6 +247,43 @@ When polling fails:
 Entities show `unavailable` state when:
 - `coordinator.last_update_success` is `False`
 - Sensor getter returns `None` (invalid marker)
+
+### Switch Write Pattern (Optimistic Cache Update)
+
+Switch entities use an optimistic cache update pattern for responsive UI:
+
+1. User toggles switch (e.g., Heating Enable)
+2. Switch entity calls `gateway.set_circuit_enable_bit()` which:
+   - Reads current register value
+   - Modifies the specific bit
+   - Writes new value to device
+   - **On success**: Updates `gateway.cache` immediately (optimistic update)
+   - **On failure**: Returns `False`, logs error
+3. Switch entity then calls `coordinator.async_request_refresh()` to confirm actual device state
+4. UI updates immediately from cache (optimistic), then corrects if device reports different value
+
+**Example**:
+```python
+async def set_circuit_enable_bit(self, bit: int, enabled: bool) -> bool:
+    # Read current value to preserve other bits
+    regs = await self.protocol.read_registers(self.slave_id, REGISTER_CIRCUIT_ENABLE, 1)
+    current = regs[0] if regs else 0
+
+    if enabled:
+        newv = current | (1 << bit)
+    else:
+        newv = current & ~(1 << bit)
+
+    result = await self.protocol.write_register(self.slave_id, REGISTER_CIRCUIT_ENABLE, newv)
+    if result:
+        self.cache[REGISTER_CIRCUIT_ENABLE] = newv  # Optimistic update
+    return result
+```
+
+This pattern provides:
+- **Responsive UI**: Switch appears to toggle immediately
+- **Error handling**: Write failures are logged and don't update cache
+- **Verification**: Refresh cycle confirms actual device state
 
 ---
 
