@@ -345,6 +345,48 @@ assert entity.native_value == 21.5
 
 ---
 
+## Debug Logging
+
+The integration provides comprehensive debug logging for troubleshooting and monitoring:
+
+### Diagnostics Logging (`diagnostics.py`)
+
+When diagnostics are fetched via Home Assistant Developer Tools, the following debug logs are emitted:
+- Config entry ID and title
+- Gateway slave_id
+- Protocol port and baudrate
+- Coordinator name
+- Cache size (number of registers)
+- Complete diagnostics data payload
+
+### Button Command Logging (`button.py`)
+
+Button press actions log:
+- "Reboot Adapter button pressed for slave_id=X"
+- "Reset Boiler Errors button pressed for slave_id=X"
+
+### Gateway Command Logging (`boiler_gateway.py`)
+
+Command execution logs:
+- `Sending reboot command (2) to slave_id=X register=0x0080`
+- `Reboot command sent successfully` / `Failed to send reboot command`
+- `Sending reset errors command (3) to slave_id=X register=0x0080`
+- `Reset errors command sent successfully` / `Failed to send reset errors command`
+
+### Enable Debug Logging
+
+In Home Assistant `configuration.yaml`:
+```yaml
+logger:
+  logs:
+    custom_components.ectocontrol_modbus: debug
+    custom_components.ectocontrol_modbus.modbus_protocol: debug
+    custom_components.ectocontrol_modbus.diagnostics: debug
+    custom_components.ectocontrol_modbus.button: debug
+```
+
+---
+
 ## Future Extensions
 
 - **Auto-discovery**: Scan slave IDs 1–32 to find boilers automatically

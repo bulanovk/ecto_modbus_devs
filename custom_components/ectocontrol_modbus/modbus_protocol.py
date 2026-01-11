@@ -265,8 +265,7 @@ class ModbusProtocol:
                     slave_id,
                     cst.WRITE_SINGLE_REGISTER,
                     addr,
-                    0,  # quantity_of_x (unused for WRITE_SINGLE_REGISTER)
-                    value,  # output_value
+                    value,
                 )
                 return True
             except modbus.ModbusError as exc:

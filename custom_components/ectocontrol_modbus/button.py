@@ -1,11 +1,15 @@
 """Button platform for adapter commands (reboot, reset errors)."""
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
 
 from .const import DOMAIN
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
@@ -37,6 +41,8 @@ class RebootAdapterButton(CoordinatorEntity, ButtonEntity):
         )
 
     async def async_press(self) -> None:
+        _LOGGER.debug("Reboot Adapter button pressed for slave_id=%s",
+                      self.coordinator.gateway.slave_id)
         await self.coordinator.gateway.reboot_adapter()
         await self.coordinator.async_request_refresh()
 
@@ -63,5 +69,7 @@ class ResetErrorsButton(CoordinatorEntity, ButtonEntity):
         )
 
     async def async_press(self) -> None:
+        _LOGGER.debug("Reset Boiler Errors button pressed for slave_id=%s",
+                      self.coordinator.gateway.slave_id)
         await self.coordinator.gateway.reset_boiler_errors()
         await self.coordinator.async_request_refresh()

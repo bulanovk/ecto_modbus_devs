@@ -240,8 +240,23 @@ class BoilerGateway:
         return bool((raw >> 1) & 0x01)
 
     async def reboot_adapter(self) -> bool:
-        # write command 2 to 0x0080
-        return await self.protocol.write_register(self.slave_id, REGISTER_COMMAND, 2)
+        """Send reboot command (2) to command register 0x0080."""
+        _LOGGER.debug("Sending reboot command (2) to slave_id=%s register=0x%04X",
+                      self.slave_id, REGISTER_COMMAND)
+        result = await self.protocol.write_register(self.slave_id, REGISTER_COMMAND, 2)
+        if result:
+            _LOGGER.debug("Reboot command sent successfully to slave_id=%s", self.slave_id)
+        else:
+            _LOGGER.error("Failed to send reboot command to slave_id=%s", self.slave_id)
+        return result
 
     async def reset_boiler_errors(self) -> bool:
-        return await self.protocol.write_register(self.slave_id, REGISTER_COMMAND, 3)
+        """Send reset errors command (3) to command register 0x0080."""
+        _LOGGER.debug("Sending reset errors command (3) to slave_id=%s register=0x%04X",
+                      self.slave_id, REGISTER_COMMAND)
+        result = await self.protocol.write_register(self.slave_id, REGISTER_COMMAND, 3)
+        if result:
+            _LOGGER.debug("Reset errors command sent successfully to slave_id=%s", self.slave_id)
+        else:
+            _LOGGER.error("Failed to send reset errors command to slave_id=%s", self.slave_id)
+        return result

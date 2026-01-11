@@ -265,9 +265,28 @@ logger:
   logs:
     custom_components.ectocontrol_modbus: debug
     custom_components.ectocontrol_modbus.modbus_protocol: debug
+    custom_components.ectocontrol_modbus.diagnostics: debug
+    custom_components.ectocontrol_modbus.button: debug
 ```
 
-Then check `home-assistant.log` for detailed Modbus traffic.
+### Available Debug Logs
+
+1. **Modbus Protocol** (`modbus_protocol.py`):
+   - Raw hex dumps of TX/RX bytes (when Debug Modbus is enabled)
+   - Connection status, errors, timeouts
+
+2. **Diagnostics** (`diagnostics.py`):
+   - When diagnostics are fetched via HA Developer Tools
+   - Config entry ID, title, slave_id, port, baudrate
+   - Cache size and complete diagnostics payload
+
+3. **Button Commands** (`button.py`):
+   - "Reboot Adapter button pressed for slave_id=X"
+   - "Reset Boiler Errors button pressed for slave_id=X"
+
+4. **Gateway Commands** (`boiler_gateway.py`):
+   - Reboot/reset command execution with register address
+   - Success/failure status
 
 ### Interactive Testing
 
@@ -303,6 +322,11 @@ python -c "import serial.tools.list_ports; print([p.device for p in serial.tools
 - Verify polling interval in `const.py` (default 15s)
 - Check for errors in `home-assistant.log`
 - Restart Home Assistant integration
+
+**Button commands not working**: Check debug logs for:
+- Button press action logged
+- Gateway command sent successfully
+- Any errors during Modbus write operation
 
 ---
 

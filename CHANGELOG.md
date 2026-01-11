@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file.
 - Prepare HACS packaging and metadata
 - Add final `codeowners` and repository URLs
 
+### Added
+- Debug logs for diagnostics calls (`diagnostics.py`)
+- Debug logs for button press actions (`button.py`)
+- Debug logs for reboot/reset commands in gateway (`boiler_gateway.py`)
+- Comprehensive debug logging documentation in BUILD.md, DESIGN.md, and CLAUDE.md
+
 ## [0.1.0] - 2026-01-07
 ### Added
 - Initial integration implementation: Modbus protocol wrapper, BoilerGateway, DataUpdateCoordinator

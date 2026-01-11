@@ -58,5 +58,4 @@ async def test_write_register_uses_single_register_function():
     assert args[0] == 1  # slave_id
     assert args[1] == cst.WRITE_SINGLE_REGISTER  # function code 0x06
     assert args[2] == 0x0031  # register address
-    assert args[3] == 0  # quantity_of_x (unused for WRITE_SINGLE_REGISTER)
-    assert args[4] == 220  # output_value - the actual value to write
+    assert args[3] == 220  # value to write

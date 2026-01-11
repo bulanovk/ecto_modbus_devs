@@ -112,6 +112,8 @@ Each config entry (slave_id on a port) creates a separate device in Home Assista
 - [x] Debug Modbus mode with raw hex logging
 - [x] Exponential backoff retry logic
 - [x] DebugSerial wrapper for TX/RX byte logging
+- [x] Debug logs for diagnostics calls
+- [x] Debug logs for reboot/reset commands
 
 ---
 
@@ -663,7 +665,25 @@ logger:
   logs:
     custom_components.ectocontrol_modbus: debug
     custom_components.ectocontrol_modbus.modbus_protocol: debug
+    custom_components.ectocontrol_modbus.diagnostics: debug
+    custom_components.ectocontrol_modbus.button: debug
 ```
+
+**Available debug logs**:
+
+1. **Diagnostics calls** (`diagnostics.py`):
+   - When diagnostics are fetched via HA Developer Tools
+   - Shows config entry ID, title, slave_id, port, baudrate, cache size
+   - Logs the complete diagnostics data payload
+
+2. **Button commands** (`button.py`):
+   - When "Reboot Adapter" button is pressed
+   - When "Reset Boiler Errors" button is pressed
+
+3. **Gateway commands** (`boiler_gateway.py`):
+   - Reboot command (2) sent to register 0x0080
+   - Reset errors command (3) sent to register 0x0080
+   - Success/failure status for each command
 
 **Check Modbus traffic** by adding log statements in `ModbusProtocol`:
 ```python
