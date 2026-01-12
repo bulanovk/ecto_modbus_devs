@@ -136,6 +136,9 @@ async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
         identifiers = dr_mock.last_create_kwargs["identifiers"]
         assert (DOMAIN, "uid_8a3f21") in identifiers
         assert (DOMAIN, "/dev/ttyUSB0:1") in identifiers
+        
+        # Verify serial_number is populated
+        assert dr_mock.last_create_kwargs["serial_number"] == "8a3f21"
 
 
 @pytest.mark.asyncio

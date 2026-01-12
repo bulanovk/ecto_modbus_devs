@@ -114,6 +114,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         model=model_name,
         sw_version=None,
         hw_version=None,
+        serial_number=gateway.get_device_uid_hex(),
     )
 
     # Store device_id for entity reference
@@ -147,6 +148,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         model=model_name,
         sw_version=str(sw_version) if sw_version is not None else None,
         hw_version=str(hw_version) if hw_version is not None else None,
+        serial_number=gateway.get_device_uid_hex(),
     )
 
     # Forward entry setups for platforms (include newly added platforms)
