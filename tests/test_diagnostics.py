@@ -22,8 +22,9 @@ class FakeCoordinator:
 
 
 class FakeEntry:
-    def __init__(self, entry_id):
+    def __init__(self, entry_id, title="Test Entry"):
         self.entry_id = entry_id
+        self.title = title
 
 
 class FakeHass:
