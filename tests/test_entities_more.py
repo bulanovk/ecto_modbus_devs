@@ -23,6 +23,7 @@ class DummyGateway:
     def __init__(self):
         self.slave_id = 1
         self.cache = {}
+        self.device_uid = None  # Add for UID refactoring
         # Add protocol mock for device_info tests
         self.protocol = type('obj', (object,), {'port': 'mock_port'})
 

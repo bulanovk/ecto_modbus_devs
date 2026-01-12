@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN
 
@@ -41,16 +41,25 @@ class CircuitSwitch(CoordinatorEntity, SwitchEntity):
 
     @property
     def unique_id(self) -> str:
-        return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_circuit_{self._bit}"
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            identifier = str(gateway.slave_id)
+        return f"{DOMAIN}_{identifier}_circuit_{self._bit}"
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
-        port = self.coordinator.gateway.protocol.port
-        slave_id = self.coordinator.gateway.slave_id
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            port = gateway.protocol.port
+            identifier = f"{port}:{gateway.slave_id}"
+
         return DeviceInfo(
-            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
-            identifiers={(DOMAIN, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, identifier)},
         )
 
     @property

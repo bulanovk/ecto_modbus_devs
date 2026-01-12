@@ -63,6 +63,13 @@ class FakeGateway:
         self.protocol = protocol
         self.slave_id = slave_id
         self.cache = {}
+        self.device_uid = None
+
+    async def read_device_info(self):
+        return True
+
+    def get_device_type_name(self):
+        return "Test Device"
 
     async def reboot_adapter(self):
         pass

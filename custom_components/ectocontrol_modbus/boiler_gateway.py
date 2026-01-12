@@ -25,6 +25,7 @@ from .const import (
     REGISTER_CIRCUIT_ENABLE,
     REGISTER_STATUS,
     REGISTER_VERSION,
+    DEVICE_TYPE_NAMES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -41,6 +42,57 @@ class BoilerGateway:
         self.protocol = protocol
         self.slave_id = slave_id
         self.cache: Dict[int, int] = {}
+
+        # Generic device info (populated by read_device_info())
+        self.device_uid: Optional[int] = None      # 24-bit UID (0x800000-0xFFFFFF)
+        self.device_type: Optional[int] = None     # Device type code
+        self.channel_count: Optional[int] = None   # Number of channels (1-10)
+
+    # ---------- GENERIC DEVICE INFO (read once at setup) ----------
+
+    async def read_device_info(self) -> bool:
+        """Read generic device information from registers 0x0000-0x0003.
+
+        Should be called once during setup. Populates device_uid, device_type,
+        and channel_count attributes.
+
+        Returns True if successful, False otherwise.
+        """
+        regs = await self.protocol.read_registers(self.slave_id, 0x0000, 4)
+        if regs is None or len(regs) < 4:
+            _LOGGER.warning("Failed to read device info registers for slave_id=%s", self.slave_id)
+            return False
+
+        # Extract UID: 24-bit value
+        # Per protocol: reg[1] = UID high 16 bits, reg[2] MSB = UID low 8 bits
+        uid_high = regs[1]  # 16 bits
+        uid_low = (regs[2] >> 8) & 0xFF  # Upper 8 bits of reg[2]
+        self.device_uid = (uid_high << 8) | uid_low
+
+        # Extract device type (MSB of reg[3])
+        self.device_type = (regs[3] >> 8) & 0xFF
+
+        # Extract channel count (LSB of reg[3])
+        self.channel_count = regs[3] & 0xFF
+
+        _LOGGER.debug(
+            "Device info for slave_id=%s: UID=0x%06X, type=0x%02X (%s), channels=%d",
+            self.slave_id, self.device_uid, self.device_type,
+            self.get_device_type_name() or "Unknown", self.channel_count
+        )
+        return True
+
+    def get_device_uid_hex(self) -> Optional[str]:
+        """Return device UID as hex string (e.g., '8a3f21')."""
+        if self.device_uid is None:
+            return None
+        return f"{self.device_uid:06x}"
+
+    def get_device_type_name(self) -> Optional[str]:
+        """Return human-readable device type name."""
+        if self.device_type is None:
+            return None
+        return DEVICE_TYPE_NAMES.get(self.device_type, f"Unknown (0x{self.device_type:02X})")
 
     # ---------- READ ACCESSORS (from cache) ----------
 

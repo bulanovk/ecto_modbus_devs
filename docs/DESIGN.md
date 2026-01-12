@@ -153,9 +153,9 @@ All Modbus registers are 16-bit unless otherwise noted.
 | 0x0011 | Version | u16 | 1 | 0xFFFF | HW (MSB), SW (LSB) |
 | 0x0018 | CH Temp | i16 | ÷10 | 0x7FFF | Heating circuit water temperature (°C) |
 | 0x0019 | DHW Temp | u16 | ÷10 | 0x7FFF | Domestic hot water temperature (°C) |
-| 0x001A | Pressure | u8 (MSB) | ÷10 | 0xFF | System pressure (bar) |
-| 0x001B | Flow | u8 (MSB) | ÷10 | 0xFF | DHW flow rate (L/min) |
-| 0x001C | Modulation | u8 (MSB) | 1 | 0xFF | Burner modulation level (%) |
+| 0x001A | Pressure | u8 (LSB) | ÷10 | 0xFF | System pressure (bar) |
+| 0x001B | Flow | u8 (LSB) | ÷10 | 0xFF | DHW flow rate (L/min) |
+| 0x001C | Modulation | u8 (LSB) | 1 | 0xFF | Burner modulation level (%) |
 | 0x001D | States | u8 (LSB) | 1 | — | Bit0=burner, Bit1=heating, Bit2=DHW |
 | 0x001E | Main Error | u16 | 1 | 0xFFFF | Error code from boiler |
 | 0x001F | Add Error | u16 | 1 | 0xFFFF | Additional error details |

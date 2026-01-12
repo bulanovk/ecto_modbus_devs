@@ -16,6 +16,7 @@ class FakeGateway:
         self.cache = {0x001D: 0}
         self.last_set_raw = None
         self.circuit_written = None
+        self.device_uid = None  # Add for UID refactoring
         # Add protocol mock for device_info tests
         self.protocol = type('obj', (object,), {'port': 'mock_port'})
 

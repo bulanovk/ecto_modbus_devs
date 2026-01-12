@@ -72,24 +72,46 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         "coordinator": coordinator,
     }
 
+    # Read generic device info (UID, device type, channels) BEFORE creating device in registry
+    try:
+        await gateway.read_device_info()
+    except Exception as err:
+        _LOGGER.warning("Failed to read device info: %s", err)
+
+    # Determine device identifier: use UID if available, fall back to port:slave_id
+    if gateway.device_uid:
+        device_identifier = f"uid_{gateway.get_device_uid_hex()}"
+        _LOGGER.debug("Using UID-based identifier: %s", device_identifier)
+    else:
+        device_identifier = f"{port}:{slave}"
+        _LOGGER.warning("UID unavailable for slave_id=%s, using fallback identifier: %s", slave, device_identifier)
+
+    # Store device identifier for entity use
+    hass.data[DOMAIN][entry.entry_id]["device_identifier"] = device_identifier
+
     # Create device in registry
     device_registry = dr.async_get(hass)
-
-    # Build connections tuple for unique device identification
-    connections = {(dr.CONNECTION_NETWORK_MAC, f"{port}:{slave}")}
 
     # Build device name from config or use default
     from .const import CONF_NAME
     device_name = entry.data.get(CONF_NAME) or f"Ectocontrol Boiler {slave}"
 
-    # Create initial device info (will be updated after first poll)
+    # Use device type name if available, otherwise default model name
+    model_name = gateway.get_device_type_name() or "Modbus Adapter v2"
+
+    # Create device in registry with UID-based identifier
+    # Also include legacy identifier for migration compatibility
+    identifiers = {(DOMAIN, device_identifier)}
+    if gateway.device_uid:
+        # If we have a UID, adds the old identifier so HA can link existing devices
+        identifiers.add((DOMAIN, f"{port}:{slave}"))
+
     device_entry = device_registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        connections=connections,
-        identifiers={(DOMAIN, f"{port}:{slave}")},
+        identifiers=identifiers,
         name=device_name,
         manufacturer="Ectocontrol",
-        model="Modbus Adapter v2",
+        model=model_name,
         sw_version=None,
         hw_version=None,
     )
@@ -104,7 +126,7 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
         # don't block setup on initial failure; coordinator will retry
         pass
 
-    # Update device info with actual data from gateway
+    # Update device info with actual data from gateway (from coordinator poll)
     manufacturer_code = gateway.get_manufacturer_code()
     model_code = gateway.get_model_code()
     hw_version = gateway.get_hw_version()
@@ -115,9 +137,9 @@ async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     if manufacturer_code is not None:
         manufacturer_name = f"Ectocontrol (Mfg: {manufacturer_code})"
 
-    model_name = "Modbus Adapter v2"
+    # Update model name with code if available
     if model_code is not None:
-        model_name = f"Adapter Model {model_code}"
+        model_name = f"{model_name} (Model: {model_code})"
 
     device_registry.async_update_device(
         device_entry.id,

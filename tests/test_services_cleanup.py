@@ -72,13 +72,11 @@ async def test_services_register_and_cleanup():
 
         # Mock the ModbusProtocol to avoid actually connecting to a serial port
         with patch("custom_components.ectocontrol_modbus.ModbusProtocol") as mock_protocol_class, \
-             patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
-             patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
+             patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator):
             mock_protocol = MagicMock()
             mock_protocol.connect = AsyncMock(return_value=True)
             mock_protocol.disconnect = AsyncMock(return_value=True)
             mock_protocol_class.return_value = mock_protocol
-            mock_frame_hass.hass = hass
 
             ok = await async_setup_entry(hass, entry)
             assert ok is True

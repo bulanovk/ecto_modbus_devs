@@ -82,6 +82,34 @@ The Ectocontrol Modbus Adapter v2 provides a Modbus RTU interface for gas boiler
 
 All registers are 16-bit holding registers unless otherwise noted.
 
+### 3.0 Generic Device Information Registers
+
+All Ectocontrol devices share a common information structure at addresses 0x0000-0x0003 (holding registers).
+
+| Address | Name | Type | Access | Description |
+|---------|------|------|--------|-------------|
+| 0x0000 | Reserved | u16 | RO | Reserved for future use |
+| 0x0001 | UID | u24 (3 bytes) | RO | Unique device identifier (range: 0x800000-0xFFFFFF) |
+| 0x0002 | Reserved + Address | u8/u8 | RO | Reserved (MSB), Device Modbus address (LSB, range: 0x01-0x20) |
+| 0x0003 | Type + Channels | u8/u8 | RO | Device type (MSB), Channel count (LSB, range: 1-10) |
+
+#### Device Type Codes (0x0003 MSB)
+
+| Code | Device Type |
+|------|-------------|
+| 0x11 | OpenTherm Adapter v1 (discontinued) |
+| 0x14 | **OpenTherm Adapter v2** (current boiler adapter) |
+| 0x15 | eBus Adapter |
+| 0x16 | Navien Adapter |
+| 0x22 | Temperature Sensor |
+| 0x23 | Humidity Sensor |
+| 0x50 | Universal Contact Sensor |
+| 0x59 | 10-channel Contact Sensor Splitter |
+| 0xC0 | 2-channel Relay Control Block |
+| 0xC1 | 10-channel Relay Control Block |
+
+---
+
 ### 3.1 Status & Diagnostics Registers
 
 | Address | Name | Type | Access | Scale | Invalid Marker | Description |
@@ -161,24 +189,24 @@ CH Setpoint Active (0x0026):
 
 | Address | Name | Type | Access | Scale | Range | Invalid Marker | Description |
 |---------|------|------|--------|-------|-------|----------------|-------------|
-| 0x001A | Pressure | u8 (MSB) | RO | ÷10 | 0 to +25.5 bar | 0xFF | System water pressure |
-| 0x001B | Flow Rate | u8 (MSB) | RO | ÷10 | 0 to +25.5 L/min | 0xFF | Domestic hot water flow rate |
-| 0x001C | Modulation Level | u8 (MSB) | RO | 1 | 0 to 100% | 0xFF | Burner modulation percentage |
+| 0x001A | Pressure | u8 (LSB) | RO | ÷10 | 0 to +25.5 bar | 0xFF | System water pressure |
+| 0x001B | Flow Rate | u8 (LSB) | RO | ÷10 | 0 to +25.5 L/min | 0xFF | Domestic hot water flow rate |
+| 0x001C | Modulation Level | u8 (LSB) | RO | 1 | 0 to 100% | 0xFF | Burner modulation percentage |
 
 #### System Sensor Examples
 
 ```
-Pressure (0x001A, MSB only):
-    Raw: 0x0C34 → 1.2 bar  (MSB = 0x0C = 12, 12 / 10)
-    Raw: 0xFF34 → Unavailable (MSB = 0xFF)
+Pressure (0x001A, LSB only):
+    Raw: 0x340C → 1.2 bar  (LSB = 0x0C = 12, 12 / 10)
+    Raw: 0x34FF → Unavailable (LSB = 0xFF)
 
-Flow Rate (0x001B, MSB only):
-    Raw: 0x0812 → 0.8 L/min (MSB = 0x08 = 8, 8 / 10)
-    Raw: 0xFF12 → Unavailable (MSB = 0xFF)
+Flow Rate (0x001B, LSB only):
+    Raw: 0x1208 → 0.8 L/min (LSB = 0x08 = 8, 8 / 10)
+    Raw: 0x12FF → Unavailable (LSB = 0xFF)
 
-Modulation Level (0x001C, MSB only):
-    Raw: 0x4B00 → 75% (MSB = 0x4B = 75)
-    Raw: 0xFF00 → Unavailable (MSB = 0xFF)
+Modulation Level (0x001C, LSB only):
+    Raw: 0x004B → 75% (LSB = 0x4B = 75)
+    Raw: 0x00FF → Unavailable (LSB = 0xFF)
 ```
 
 ---
@@ -345,7 +373,7 @@ These special values indicate that a sensor is not available, not supported, or 
 |--------|-----|------|---------|---------|
 | **0x7FFF** | 32767 | i16 | CH temp, DHW temp, CH setpoint active | Sensor not available or error |
 | **0xFFFF** | 65535 | u16 | Error codes, version, manufacturer/model | Invalid or unavailable |
-| **0xFF** | 255 | u8 (MSB) | Pressure, flow, modulation, version bytes | Sensor not available |
+| **0xFF** | 255 | u8 (LSB) | Pressure, flow, modulation | Sensor not available |
 | **0x7F** | 127 | i8 (MSB) | Outdoor temperature | Invalid reading |
 
 ### Handling Invalid Values

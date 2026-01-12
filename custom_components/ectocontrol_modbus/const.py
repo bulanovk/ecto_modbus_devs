@@ -30,7 +30,39 @@ SERIAL_PORT_PATTERNS = [
     "/dev/tty.*",     # macOS serial ports (terminal)
 ]
 
-# Register addresses
+# Generic Device Information Registers (0x0000-0x0003)
+# Per MODBUS_PROTOCOL.md section 3.0 - common to all Ectocontrol devices
+REGISTER_RESERVED = 0x0000
+REGISTER_UID = 0x0001           # u24 (3 bytes): unique device identifier
+REGISTER_ADDRESS = 0x0002       # MSB: reserved, LSB: device Modbus address (0x01-0x20)
+REGISTER_TYPE_CHANNELS = 0x0003 # MSB: device type, LSB: channel count (1-10)
+
+# Device Type Codes (from MODBUS_PROTOCOL.md section 3.0)
+DEVICE_TYPE_OPENTHERM_V1 = 0x11     # OpenTherm Adapter v1 (discontinued)
+DEVICE_TYPE_OPENTHERM_V2 = 0x14     # OpenTherm Adapter v2 (current)
+DEVICE_TYPE_EBUS = 0x15             # eBus Adapter
+DEVICE_TYPE_NAVIEN = 0x16           # Navien Adapter
+DEVICE_TYPE_TEMP_SENSOR = 0x22      # Temperature Sensor
+DEVICE_TYPE_HUMIDITY_SENSOR = 0x23  # Humidity Sensor
+DEVICE_TYPE_CONTACT_SENSOR = 0x50   # Universal Contact Sensor
+DEVICE_TYPE_CONTACT_SPLITTER = 0x59 # 10-channel Contact Sensor Splitter
+DEVICE_TYPE_RELAY_2CH = 0xC0        # 2-channel Relay Control Block
+DEVICE_TYPE_RELAY_10CH = 0xC1       # 10-channel Relay Control Block
+
+DEVICE_TYPE_NAMES = {
+    0x11: "OpenTherm Adapter v1",
+    0x14: "OpenTherm Adapter v2",
+    0x15: "eBus Adapter",
+    0x16: "Navien Adapter",
+    0x22: "Temperature Sensor",
+    0x23: "Humidity Sensor",
+    0x50: "Contact Sensor",
+    0x59: "Contact Splitter 10ch",
+    0xC0: "Relay Block 2ch",
+    0xC1: "Relay Block 10ch",
+}
+
+# Status & Diagnostics Register addresses (0x0010+)
 REGISTER_STATUS = 0x0010
 REGISTER_VERSION = 0x0011
 REGISTER_UPTIME = 0x0012

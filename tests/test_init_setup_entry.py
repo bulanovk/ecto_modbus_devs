@@ -16,6 +16,7 @@ class FakeDeviceRegistry:
         self._devices = {}
 
     def async_get_or_create(self, **kwargs):
+        self.last_create_kwargs = kwargs
         entry = FakeDeviceEntry()
         self._devices[entry.id] = entry
         return entry
@@ -80,6 +81,13 @@ class FakeProtocol:
     async def disconnect(self):
         self.connected = False
 
+    async def read_registers(self, slave_id, start, count, timeout=None):
+        # Mock device info reading (0x0000, 4 registers)
+        if start == 0x0000 and count == 4:
+            # UID=0x8A3F21, Type=0x14, Channels=2
+            return [0x0000, 0x8A3F, 0x2101, 0x1402]
+        return None
+
 
 class FakeCall:
     def __init__(self, data=None):
@@ -112,22 +120,22 @@ async def test_async_setup_entry_with_real_entry_and_services(monkeypatch):
     fake_coordinator.async_config_entry_first_refresh = MagicMock(return_value=asyncio.sleep(0))
     fake_coordinator.async_request_refresh = MagicMock(return_value=asyncio.sleep(0))
 
-    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+    with patch("custom_components.ectocontrol_modbus.dr") as mock_dr, \
          patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol), \
-         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
-         patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
-        mock_get_dr.return_value = FakeDeviceRegistry()
-        # Set up frame helper to avoid RuntimeError
-        from homeassistant.helpers import frame
-        mock_hass_obj = MagicMock()
-        mock_hass_obj.hass = hass
-        mock_frame_hass.hass = hass
+         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator):
+        mock_dr.async_get.return_value = FakeDeviceRegistry()
 
         ok = await async_setup_entry(hass, entry)
         assert ok is True
         assert "entry1" in hass.data[DOMAIN]
         assert hass.services._registered[(DOMAIN, "reboot_adapter")]
         assert hass.services._registered[(DOMAIN, "reset_boiler_errors")]
+        
+        # Verify dual identifiers are used
+        dr_mock = mock_dr.async_get.return_value
+        identifiers = dr_mock.last_create_kwargs["identifiers"]
+        assert (DOMAIN, "uid_8a3f21") in identifiers
+        assert (DOMAIN, "/dev/ttyUSB0:1") in identifiers
 
 
 @pytest.mark.asyncio
@@ -144,14 +152,11 @@ async def test_async_unload_entry_with_multiple_entries(monkeypatch):
     fake_coordinator.async_config_entry_first_refresh = MagicMock(return_value=asyncio.sleep(0))
     fake_coordinator.async_request_refresh = MagicMock(return_value=asyncio.sleep(0))
 
-    with patch("custom_components.ectocontrol_modbus.dr.async_get") as mock_get_dr, \
+    with patch("custom_components.ectocontrol_modbus.dr") as mock_dr, \
          patch("custom_components.ectocontrol_modbus.ModbusProtocol", FakeProtocol), \
-         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator), \
-         patch("homeassistant.helpers.frame._hass") as mock_frame_hass:
-        mock_get_dr.return_value = FakeDeviceRegistry()
-        # Set up frame helper to avoid RuntimeError
-        mock_frame_hass.hass = hass
-
+         patch("custom_components.ectocontrol_modbus.BoilerDataUpdateCoordinator", return_value=fake_coordinator):
+        mock_dr.async_get.return_value = FakeDeviceRegistry()
+        
         await async_setup_entry(hass, entry1)
         await async_setup_entry(hass, entry2)
 

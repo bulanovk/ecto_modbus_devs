@@ -5,7 +5,7 @@ import logging
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceInfo, CONNECTION_NETWORK_MAC
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import DOMAIN
 
@@ -28,16 +28,25 @@ class RebootAdapterButton(CoordinatorEntity, ButtonEntity):
 
     @property
     def unique_id(self) -> str:
-        return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_reboot"
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            identifier = str(gateway.slave_id)
+        return f"{DOMAIN}_{identifier}_reboot"
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
-        port = self.coordinator.gateway.protocol.port
-        slave_id = self.coordinator.gateway.slave_id
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            port = gateway.protocol.port
+            identifier = f"{port}:{gateway.slave_id}"
+
         return DeviceInfo(
-            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
-            identifiers={(DOMAIN, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, identifier)},
         )
 
     async def async_press(self) -> None:
@@ -56,16 +65,25 @@ class ResetErrorsButton(CoordinatorEntity, ButtonEntity):
 
     @property
     def unique_id(self) -> str:
-        return f"{DOMAIN}_{self.coordinator.gateway.slave_id}_reset_errors"
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            identifier = str(gateway.slave_id)
+        return f"{DOMAIN}_{identifier}_reset_errors"
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info for entity association."""
-        port = self.coordinator.gateway.protocol.port
-        slave_id = self.coordinator.gateway.slave_id
+        gateway = self.coordinator.gateway
+        if gateway.device_uid:
+            identifier = f"uid_{gateway.get_device_uid_hex()}"
+        else:
+            port = gateway.protocol.port
+            identifier = f"{port}:{gateway.slave_id}"
+
         return DeviceInfo(
-            connections={(CONNECTION_NETWORK_MAC, f"{port}:{slave_id}")},
-            identifiers={(DOMAIN, f"{port}:{slave_id}")},
+            identifiers={(DOMAIN, identifier)},
         )
 
     async def async_press(self) -> None:
